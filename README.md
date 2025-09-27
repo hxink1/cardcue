@@ -1,16 +1,26 @@
-# CardCue — v1.1.1
-
+# CardCue — Alpha 1.0
 CardCue is a zero-build flashcards + MCQ micro-app.  
 It runs entirely in the browser, installs as a Progressive Web App (PWA), and works offline.
 
 ---
 
-## Current Version
-- **App Version:** 1.1.1  
-- **Last Updated:** 2025-09-27
+## Use it
+- **Study**: open `study.html` to learn and test yourself.
+- **Metrics**: open `metrics.html` to review progress and topic-level statistics.
+- **Editor**: open `editor.html` to add or update cards.
 
-## Features
-- Flashcard + MCQ learning modes
-- Session testing with filters
-- Offline-first PWA (installable)
-- Version + last updated info visible in footer
+All pages share the same deck data via local storage.
+
+---
+
+## Branding
+Update `config.js` to customise the app name, colours, and icon path:
+
+```js
+window.APP = {
+  name: "CardCue",
+  shortName: "CardCue",
+  themeColor: "#8b93ff",      // PWA tint colour
+  backgroundColor: "#0b0e14", // Splash background colour
+  iconsPath: "icons"          // Directory for icons
+};
