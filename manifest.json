@@ -1,8 +1,9 @@
 {
+    "id": "./",
     "name": "CardCue",
     "short_name": "CardCue",
-    "start_url": "study.html",
-    "scope": ".",
+    "start_url": "./",
+    "scope": "./",
     "display": "standalone",
     "background_color": "#0b0e14",
     "theme_color": "#8b93ff",

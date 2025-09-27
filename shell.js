@@ -20,6 +20,7 @@ class AppShell extends HTMLElement {
     const logoSrc    = this.getAttribute('data-logo') || `${iconsPath}/favicon-32x32.png`;
     const brandOffset = parseInt(this.getAttribute('data-brand-offset') || '0', 10);
 
+    // ---------- Header / Nav ----------
     const header = document.createElement('header');
     header.className = 'app-header';
     header.innerHTML = `
@@ -65,26 +66,15 @@ class AppShell extends HTMLElement {
 
     this.append(header, main, footer);
 
+    // Page title + meta
     const pageSuffix = this._inferPageSuffix();
     document.title = pageSuffix ? `${brandTitle} - ${pageSuffix}` : brandTitle;
     this._ensureMeta('apple-mobile-web-app-title', brandTitle);
     this._ensureMeta('theme-color', themeColor);
 
-    this._attachManifest({
-      name: brandTitle,
-      short_name: shortName,
-      theme_color: themeColor,
-      background_color: bgColor,
-      display: 'standalone',
-      start_url: 'study.html',
-      icons: [
-        { src: `${iconsPath}/icon-192x192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: `${iconsPath}/icon-512x512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
-        { src: `${iconsPath}/icon-192x192-maskable.png`, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-        { src: `${iconsPath}/icon-512x512-maskable.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
-      ]
-    });
+    // Dynamic manifest disabled — using static manifest.json from pages.
 
+    // Highlight current nav
     const here = (location.pathname.split('/').pop() || 'study.html').toLowerCase();
     this.querySelectorAll('.nav-link').forEach(a => {
       if ((a.getAttribute('href') || '').toLowerCase() === here) {
@@ -92,35 +82,27 @@ class AppShell extends HTMLElement {
       }
     });
 
-    // ---------- NEW: clearer theme toggle ----------
+    // ---------- Theme toggle ----------
     const themeBtn = this.querySelector('#btn-theme');
-
     const applyTheme = (mode) => {
       document.documentElement.setAttribute('data-theme', mode);
       localStorage.setItem('theme', mode);
-      // Make it obvious with a label + emoji
       themeBtn.textContent = mode === 'dark' ? '☀️ Light' : '🌙 Dark';
       themeBtn.setAttribute('aria-pressed', String(mode === 'dark'));
     };
-
-    // initial label
     applyTheme(savedTheme);
-
-    // click to toggle
     themeBtn.addEventListener('click', () => {
       const cur = document.documentElement.getAttribute('data-theme') || 'light';
       applyTheme(cur === 'light' ? 'dark' : 'light');
     });
-
-    // keyboard shortcut: press "T" anywhere to toggle
     window.addEventListener('keydown', (e) => {
       if ((e.key || '').toLowerCase() === 't' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const cur = document.documentElement.getAttribute('data-theme') || 'light';
         applyTheme(cur === 'light' ? 'dark' : 'light');
       }
     });
-    // ---------- end theme block ----------
 
+    // ---------- Help ----------
     this.querySelector('#btn-help')?.addEventListener('click', () => {
       alert(
 `Keyboard:
@@ -130,24 +112,52 @@ class AppShell extends HTMLElement {
       );
     });
 
+    // ---------- Import/Export bindings ----------
     if (window.App?.initImportExportBindings) {
       App.initImportExportBindings();
     } else {
       window.addEventListener('load', () => App?.initImportExportBindings?.());
     }
 
-    // SW (Pages is HTTPS, so this will run)
-    if (
-      'serviceWorker' in navigator &&
-      (window.isSecureContext ||
+    // ---------- Service Worker (GitHub Pages-safe) ----------
+    (function registerSW() {
+      if (!('serviceWorker' in navigator)) return;
+
+      const isSecure =
+        window.isSecureContext ||
+        location.protocol === 'https:' ||
         location.hostname === 'localhost' ||
-        location.hostname === '127.0.0.1')
-    ) {
+        location.hostname === '127.0.0.1';
+      if (!isSecure) return;
+
+      // Scope detection: "/<repo>/" on GitHub Pages, "/" locally
+      const parts = location.pathname.split('/').filter(Boolean);
+      const isPages = location.hostname.endsWith('github.io');
+      const base = isPages ? `/${parts[0]}/` : '/';
+
       navigator.serviceWorker
-        .register('service-worker.js')
-        .then(() => console.log('SW registered'))
-        .catch(err => console.error('SW failed', err));
-    }
+        .register(`${base}service-worker.js`, { scope: base })
+        .then(reg => {
+          console.log('[SW] registered with scope', base);
+
+          // Reload the page once when a new controller takes over
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (window.__reloadingForSW) return;
+            window.__reloadingForSW = true;
+            location.reload();
+          });
+
+          // Optional: log messages from SW (e.g., version activated)
+          navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data?.type === 'SW_ACTIVATED') {
+              console.log('[SW] Activated version:', e.data.version);
+            }
+          });
+
+          return reg;
+        })
+        .catch(err => console.error('[SW] failed', err));
+    })();
   }
 
   _ensureMeta(name, content) {
@@ -156,8 +166,8 @@ class AppShell extends HTMLElement {
     m.setAttribute('content', content);
   }
 
-  _attachManifest(obj) {
-    // Dynamic manifest disabled — using static manifest.json from study.html
+  _attachManifest(_obj) {
+    // Dynamic manifest disabled — using static manifest.json from pages.
   }
 
   _inferPageSuffix() {
