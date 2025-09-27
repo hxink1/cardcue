@@ -637,7 +637,7 @@
   // ---------- Optional: Single-card viewer helper ----------
 
   /**
-   * Creates a single-card viewer controller with reveal behaviour.
+   * Creates a single-card viewer controller with “Show Answer” reveal behaviour.
    * @param {{getFilters:Function,elements:{
    *  host:HTMLElement,count:HTMLElement,btnPrev?:HTMLElement,btnNext?:HTMLElement,btnPeek?:HTMLElement
    * }}} cfg - Configuration.
@@ -652,12 +652,12 @@
     let revealed = revealAll;
 
     /**
-     * Updates the label of the peek button to reflect current reveal mode.
+     * Updates the label of the “Show Answer” button to reflect current reveal mode.
      * @returns {void}
      */
     function updatePeekLabel() {
       if (!elements.btnPeek) return;
-      elements.btnPeek.textContent = revealAll ? 'Hide answers' : 'Peek (Enter)';
+      elements.btnPeek.textContent = revealAll ? 'Hide answers' : 'Show Answer (Enter)';
     }
 
     /**

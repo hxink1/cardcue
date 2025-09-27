@@ -56,9 +56,9 @@
                 <ul id="topic-list" class="topic-list"></ul>
             </section>
 
-            <!-- Learn (Browse & Peek) -->
+            <!-- Learn -->
             <section class="panel">
-                <h2 class="panel-title">Learn (Browse &amp; Peek)</h2>
+                <h2 class="panel-title">Learn</h2>
 
                 <div class="tabbar" style="margin-top:4px;">
                     <button id="tab-single" class="tab active">Single</button>
@@ -88,7 +88,7 @@
                     <div class="viewer-toolbar">
                         <button id="v-prev" class="btn">◀ Previous (J)</button>
                         <button id="v-next" class="btn">Next (K) ▶</button>
-                        <button id="v-peek" class="btn">Peek (Enter)</button>
+                        <button id="v-peek" class="btn">Show Answer (Enter)</button>
                         <span id="v-count" class="viewer-count">0 / 0</span>
                     </div>
                     <div class="field viewer-options"
@@ -175,10 +175,7 @@
             App.initImportExportBindings();
             App.initStudyPage();
 
-            /**
-             * Returns the currently active topic from the topic list, or an empty string.
-             * @returns {string} Active topic or ''.
-             */
+            /** Returns the currently active topic from the topic list, or an empty string. */
             const topicActive = () => {
                 const li = document.querySelector('#topic-list li.active');
                 const t = li ? li.getAttribute('data-topic') : '';
@@ -200,7 +197,7 @@
                 getFilters() {
                     const opts = {
                         search: searchEl.value.trim(),
-                        type: typeEl.value,
+                        type: typeEl.value,           // '' | 'flashcard' | 'mcq'
                         topic: topicActive(),
                         wrongOnly: wrongEl.checked,
                         dueOnly: dueEl.checked,
@@ -215,14 +212,11 @@
                     count: document.getElementById('v-count'),
                     btnPrev: document.getElementById('v-prev'),
                     btnNext: document.getElementById('v-next'),
-                    btnPeek: document.getElementById('v-peek')
+                    btnPeek: document.getElementById('v-peek') // label says "Show Answer"
                 }
             });
 
-            /**
-             * Renders the grid view with the current filters.
-             * @returns {void}
-             */
+            /** Grid view render using the same filters. */
             function renderGrid() {
                 const esc = s => s ? s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
                 const cards = App.filterDeck({
@@ -238,7 +232,7 @@
                     const topics = esc((c.topics || []).join(', '));
                     if (c.type === 'mcq') {
                         const letters = ['A', 'B', 'C', 'D'];
-                        const opts = (c.choices || []).map((t, i) => `<div><strong>${letters[i]}.</strong> ${esc(t || '')}</div>`).join('');
+                        const opts = (c.choices || []).map((t, i) => `<div><strong>${letters[i] || ''}.</strong> ${esc(t || '')}</div>`).join('');
                         return `<article class="card"><div class="meta"><span class="badge">${topics}</span><span class="badge">MCQ</span></div><div><strong>${esc(c.question || '')}</strong></div><div style="margin-top:6px">${opts}</div></article>`;
                     }
                     return `<article class="card"><div class="meta"><span class="badge">${topics}</span><span class="badge">Flashcard</span></div><div><strong>Front</strong><div>${esc(c.front || '')}</div></div></article>`;
@@ -246,11 +240,7 @@
                 document.getElementById('learn-grid').innerHTML = html || '<div class="placeholder">No cards match your filters.</div>';
             }
 
-            /**
-             * Switches between Single and Grid learning modes, persists the choice, and re-renders.
-             * @param {'single'|'grid'} mode - Target mode.
-             * @returns {void}
-             */
+            /** Switch Single/Grid; persist choice; render accordingly. */
             function setMode(mode) {
                 const tabSingle = document.getElementById('tab-single');
                 const tabGrid = document.getElementById('tab-grid');
