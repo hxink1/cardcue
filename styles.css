@@ -22,7 +22,6 @@
     --shadow: 0 6px 24px rgba(0, 0, 0, .08);
 
     --content-max: 1200px;
-    /* a bit wider so the app doesn't feel cramped */
 
     --ok: #10b981;
     --warn: #f59e0b;
@@ -64,7 +63,6 @@ body {
     margin: 0;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     font-size: calc(16px * var(--scale));
-    /* global 10–12% bump */
     line-height: 1.6;
     background: var(--bg);
     color: var(--fg);
@@ -84,7 +82,7 @@ a {
     white-space: nowrap;
 }
 
-/* Subtle placeholder text block (explanations, no data, etc.) */
+/* Subtle placeholder text block */
 .placeholder {
     color: var(--muted);
     background: color-mix(in srgb, var(--panel-bg), var(--fg) 3%);
@@ -113,7 +111,6 @@ a {
     display: flex;
     align-items: center;
     gap: 10px;
-    /* tighter so nav hugs the title */
 }
 
 .brand-logo {
@@ -132,7 +129,6 @@ a {
 .nav {
     display: flex;
     gap: 10px;
-    /* slightly tighter */
     align-items: center;
 }
 
@@ -166,7 +162,6 @@ a {
     margin: 0 2px;
 }
 
-/* Styled inline switch (Replace pill) */
 .toolbar .switch,
 .app-actions .switch {
     display: flex;
@@ -267,7 +262,6 @@ input[type="number"] {
     gap: 6px;
 }
 
-/* Inline help text */
 .help {
     color: var(--muted);
     font-size: 13px;
@@ -276,14 +270,13 @@ input[type="number"] {
 /* =========================
    LAYOUT / PANELS
 ========================= */
-/* New: default main container (used by all pages now) */
 .app-main {
     max-width: var(--content-max);
     margin: 0 auto;
     padding: 20px;
 }
 
-/* Legacy: kept so older pages that still use .one-col don’t break */
+/* Legacy helper */
 .app-main.one-col {
     display: block;
     max-width: var(--content-max);
@@ -313,7 +306,7 @@ input[type="number"] {
     letter-spacing: .05em;
 }
 
-/* Tables (used in Metrics) */
+/* Tables */
 .table-wrap {
     overflow-x: auto;
 }
@@ -334,6 +327,30 @@ input[type="number"] {
 .table thead th {
     color: var(--muted);
     font-weight: 600;
+}
+
+/* =========================
+   TOPICS (legacy UL)
+========================= */
+.topic-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.topic-list li {
+    padding: 8px 10px;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--panel-bg);
+}
+
+.topic-list li.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 /* =========================
@@ -365,8 +382,6 @@ input[type="number"] {
     justify-content: flex-end;
 }
 
-/* Search input inside topics */
-/* Search input inside topics */
 .filters .srch input[type="search"] {
     border-radius: 8px;
     padding: 8px 10px;
@@ -380,7 +395,7 @@ input[type="number"] {
     outline: none;
 }
 
-/* Topic chips */
+/* Topic chips (optional alternate renderer) */
 .chips {
     display: flex;
     flex-wrap: wrap;
@@ -412,6 +427,25 @@ input[type="number"] {
     border-color: var(--accent);
     color: var(--fg);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* =========================
+   TABBAR (Learn/Test + view)
+========================= */
+.tabbar {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.tabbar .tab {
+    position: relative;
+}
+
+.tabbar .tab.active {
+    background: color-mix(in srgb, var(--accent) 16%, var(--btn-bg));
+    border-color: var(--accent);
+    color: color-mix(in srgb, var(--accent) 70%, #fff);
 }
 
 /* =========================
@@ -472,9 +506,7 @@ html[data-theme="dark"] .card {
     min-height: 240px;
     font-size: 17px;
     max-width: 72ch;
-    /* readable line length on laptops */
     margin: 0 auto;
-    /* center the card in the panel */
     background: color-mix(in srgb, var(--panel-bg), var(--fg) 3%);
     border: 1px solid var(--panel-border);
 }
@@ -496,7 +528,7 @@ html[data-theme="dark"] .card {
     color: var(--muted);
 }
 
-/* MCQ options inside viewer/session */
+/* MCQ options */
 .choices {
     display: grid;
     gap: 8px;
@@ -542,7 +574,7 @@ html[data-theme="dark"] .card {
 }
 
 /* =========================
-   SESSION UI BITS
+   SESSION UI
 ========================= */
 .progress {
     width: 100%;
@@ -557,6 +589,70 @@ html[data-theme="dark"] .card {
     height: 100%;
     background: var(--accent);
     transition: width .25s linear;
+}
+
+/* =========================
+   UTILITIES (new)
+========================= */
+.row {
+    display: flex;
+}
+
+.between {
+    justify-content: space-between;
+}
+
+.center {
+    align-items: center;
+}
+
+.wrap {
+    flex-wrap: wrap;
+}
+
+.gap-2 {
+    gap: 8px;
+}
+
+.gap-3 {
+    gap: 12px;
+}
+
+.stack-3 {
+    display: grid;
+    gap: 12px;
+}
+
+.ml-auto {
+    margin-left: auto;
+}
+
+.mt-2 {
+    margin-top: 8px;
+}
+
+.mt-3 {
+    margin-top: 12px;
+}
+
+.min-100 {
+    min-width: 100px;
+}
+
+.min-140 {
+    min-width: 140px;
+}
+
+.min-160 {
+    min-height: 160px;
+}
+
+.small {
+    font-size: 12px;
+}
+
+.soft {
+    opacity: .85;
 }
 
 /* =========================
