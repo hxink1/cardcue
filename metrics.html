@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CardCue - Metrics</title>
+
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#8b93ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CardCue">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167x167.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="icon" href="icons/favicon.ico">
+
+    <!-- libs -->
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- core + shell -->
+    <script defer src="app.js"></script>
+    <script defer src="config.js"></script>
+    <script defer src="shell.js"></script>
+</head>
+
+<body>
+    <!-- Match Study header: logo on left, brand nudged right -->
+    <app-shell id="shell" data-logo="icons/favicon-32x32.png" data-brand-offset="12">
+        <main class="app-main">
+
+            <section class="panel">
+                <h2 class="panel-title">Summary</h2>
+                <div class="stats">
+                    <span>Total cards: <strong id="m-total">0</strong></span>
+                    <span>Sessions: <strong id="m-sessions">0</strong></span>
+                    <span>Overall accuracy: <strong id="m-acc">0%</strong></span>
+                    <span>Avg streak: <strong id="m-streak">0</strong></span>
+                </div>
+                <div class="meter">
+                    <div id="m-acc-meter" style="width:0%"></div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2 class="panel-title">Per-topic metrics</h2>
+                <div class="table-wrap">
+                    <table class="table" id="topic-table">
+                        <thead>
+                            <tr>
+                                <th>Topic</th>
+                                <th>Seen</th>
+                                <th>Correct</th>
+                                <th>Wrong</th>
+                                <th>Accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <button class="btn" id="btn-export-csv" style="margin-top:8px;">Export metrics to CSV</button>
+            </section>
+
+            <section class="panel">
+                <h2 class="panel-title">Per-type accuracy</h2>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <canvas id="typeChart" width="420" height="210"></canvas>
+                    <canvas id="topicChart" width="420" height="210"></canvas>
+                </div>
+            </section>
+
+        </main>
+    </app-shell>
+
+    <script>
+        /**
+         * Initialises the metrics page after DOM readiness.
+         * Computes summary statistics, renders per-topic table, wires CSV export,
+         * and draws simple bar charts using Canvas 2D.
+         * @returns {void}
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            App.initImportExportBindings();
+
+            const deck = App.getDeck();
+            const cards = deck.cards || [];
+            const sessions = App.getSessionCount();
+
+            const seen = cards.reduce((s, c) => s + (c.stats?.seen || 0), 0);
+            const correct = cards.reduce((s, c) => s + (c.stats?.correct || 0), 0);
+            const acc = seen ? Math.round(100 * correct / seen) : 0;
+            const avgStreak = cards.length ? Math.round(cards.reduce((s, c) => s + (c.stats?.streak || 0), 0) / cards.length) : 0;
+
+            document.getElementById('m-total').textContent = cards.length;
+            document.getElementById('m-sessions').textContent = sessions;
+            document.getElementById('m-acc').textContent = acc + '%';
+            document.getElementById('m-acc-meter').style.width = acc + '%';
+            document.getElementById('m-streak').textContent = avgStreak;
+
+            const perTopic = {};
+            cards.forEach(c => {
+                (c.topics || ['(none)']).forEach(t => {
+                    perTopic[t] = perTopic[t] || { seen: 0, correct: 0 };
+                    perTopic[t].seen += (c.stats?.seen || 0);
+                    perTopic[t].correct += (c.stats?.correct || 0);
+                });
+            });
+
+            const tbody = document.querySelector('#topic-table tbody');
+            tbody.innerHTML = Object.keys(perTopic).sort().map(t => {
+                const s = perTopic[t].seen, c = perTopic[t].correct, w = Math.max(0, s - c);
+                const a = s ? Math.round(100 * c / s) : 0;
+                return `<tr><td>${t}</td><td>${s}</td><td>${c}</td><td>${w}</td><td>${a}%</td></tr>`;
+            }).join('');
+
+            /**
+             * Creates and downloads a CSV file of the per-topic metrics table.
+             * @returns {void}
+             */
+            function exportTopicMetricsCSV() {
+                const rows = [['topic', 'seen', 'correct', 'wrong', 'accuracy']];
+                Object.keys(perTopic).forEach(t => {
+                    const s = perTopic[t].seen, c = perTopic[t].correct, w = Math.max(0, s - c), a = s ? Math.round(100 * c / s) : 0;
+                    rows.push([t, s, c, w, `${a}%`]);
+                });
+                const csv = rows
+                    .map(r => r.map(v => String(v).includes(',') ? `"${String(v).replace(/"/g, '""')}"` : v).join(','))
+                    .join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'metrics.csv';
+                a.click();
+            }
+
+            document.getElementById('btn-export-csv').addEventListener('click', exportTopicMetricsCSV);
+
+            /**
+             * Draws a simple bar chart on a canvas using provided labels and values.
+             * Bars are scaled to the maximum value and styled with CSS custom properties.
+             *
+             * @param {HTMLCanvasElement} canvas - Target canvas element.
+             * @param {string[]} labels - Category labels.
+             * @param {number[]} values - Numeric values per label.
+             * @returns {void}
+             */
+            function barChart(canvas, labels, values) {
+                const ctx = canvas.getContext('2d');
+                const W = canvas.width, H = canvas.height, pad = 30;
+                const max = Math.max(1, ...values);
+                ctx.clearRect(0, 0, W, H);
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--panel-bg').trim();
+                ctx.fillRect(0, 0, W, H);
+                const slotW = (W - pad * 2) / Math.max(1, values.length);
+                const barW = slotW * 0.7;
+
+                values.forEach((v, i) => {
+                    const x = pad + i * slotW + (slotW - barW) / 2;
+                    const h = (H - pad * 2) * (v / max);
+                    const y = H - pad - h;
+                    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+                    ctx.fillRect(x, y, barW, h);
+                    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
+                    ctx.font = '12px system-ui';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(labels[i], x + barW / 2, H - 8);
+                });
+            }
+
+            const types = ['flashcard', 'mcq'];
+            const typeSeen = types.map(t => cards.filter(c => c.type === t).reduce((s, c) => s + (c.stats?.seen || 0), 0));
+            const typeCorrect = types.map(t => cards.filter(c => c.type === t).reduce((s, c) => s + (c.stats?.correct || 0), 0));
+            const typeAcc = typeSeen.map((s, i) => s ? Math.round(100 * typeCorrect[i] / s) : 0);
+
+            barChart(document.getElementById('typeChart'), ['Flash', 'MCQ'], typeAcc);
+
+            const topCounts = Object
+                .entries(perTopic)
+                .map(([t, v]) => [t, v.seen ? Math.round(100 * v.correct / v.seen) : 0])
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6);
+
+            barChart(
+                document.getElementById('topicChart'),
+                topCounts.map(x => x[0]),
+                topCounts.map(x => x[1])
+            );
+        });
+    </script>
+</body>
+
+</html>

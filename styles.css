@@ -1,0 +1,407 @@
+/* =========================
+   THEME TOKENS
+========================= */
+:root {
+    --scale: 1.1;
+    /* ~10% zoom */
+    --bg: #f8fafc;
+    --fg: #1e293b;
+    --muted: #64748b;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+
+    --panel-bg: #fff;
+    --panel-border: #e2e8f0;
+
+    --btn-bg: #e2e8f0;
+    --btn-fg: #1e293b;
+    --btn-border: #cbd5e1;
+    --btn-hover-bg: #cbd5e1;
+
+    --ring: 0 0 0 3px rgba(59, 130, 246, .35);
+    --shadow: 0 6px 24px rgba(0, 0, 0, .08);
+
+    --content-max: 1200px;
+    /* a bit wider so the app doesn't feel cramped */
+}
+
+html[data-theme="dark"] {
+    --bg: #0b0e14;
+    --fg: #e7e7e7;
+    --muted: #9aa2b1;
+    --accent: #8b93ff;
+    --accent-hover: #6f78ff;
+
+    --panel-bg: #0f1523;
+    --panel-border: #1e2636;
+
+    --btn-bg: #141b2c;
+    --btn-fg: #e7e7e7;
+    --btn-border: #23304b;
+    --btn-hover-bg: #18223a;
+
+    --ring: 0 0 0 3px rgba(139, 147, 255, .35);
+    --shadow: 0 10px 32px rgba(0, 0, 0, .5);
+}
+
+/* =========================
+   BASE
+========================= */
+* {
+    box-sizing: border-box;
+}
+
+:focus {
+    outline: none;
+    box-shadow: var(--ring);
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-size: calc(16px * var(--scale));
+    /* global 10–12% bump */
+    line-height: 1.6;
+    background: var(--bg);
+    color: var(--fg);
+}
+
+/* =========================
+   HEADER / NAV
+========================= */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--accent);
+    color: #fff;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* tighter so nav hugs the title */
+}
+
+.brand-logo {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    flex: 0 0 auto;
+}
+
+.app-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.nav {
+    display: flex;
+    gap: 10px;
+    /* slightly tighter */
+    align-items: center;
+}
+
+.nav-link {
+    color: #fff;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    opacity: .95;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, .14);
+    opacity: 1;
+}
+
+/* Tools cluster (right side) */
+.toolbar,
+.app-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.toolbar .divider,
+.app-actions .divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, .25);
+    margin: 0 2px;
+}
+
+/* Styled inline switch (Replace pill) */
+.toolbar .switch,
+.app-actions .switch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    font-size: 13px;
+    background: rgba(255, 255, 255, .08);
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+}
+
+.toolbar .switch:hover,
+.app-actions .switch:hover {
+    background: rgba(255, 255, 255, .16);
+}
+
+.toolbar input[type="checkbox"],
+.app-actions input[type="checkbox"] {
+    margin: 0;
+    vertical-align: middle;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+button,
+.btn {
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    border: 1px solid var(--btn-border);
+    padding: 9px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    box-shadow: var(--shadow);
+}
+
+button:hover,
+.btn:hover {
+    background: var(--btn-hover-bg);
+}
+
+button.primary,
+.btn.primary {
+    background: var(--accent);
+    border-color: var(--accent-hover);
+    color: #fff;
+}
+
+button.primary:hover,
+.btn.primary:hover {
+    background: var(--accent-hover);
+}
+
+.btn.small {
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.btn.ghost {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: #fff;
+}
+
+.btn.ghost:hover {
+    background: rgba(255, 255, 255, .14);
+}
+
+/* =========================
+   INPUTS
+========================= */
+.input,
+select,
+input[type="text"],
+input[type="search"],
+textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel-bg);
+    color: var(--fg);
+}
+
+.field {
+    margin-bottom: 8px;
+}
+
+.switch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* =========================
+   LAYOUT / PANELS
+========================= */
+/* New: default main container (used by all pages now) */
+.app-main {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Legacy: kept so older pages that still use .one-col don’t break */
+.app-main.one-col {
+    display: block;
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: var(--shadow);
+}
+
+.panel+.panel {
+    margin-top: 16px;
+}
+
+.panel-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+/* Tables (used in Metrics) */
+.table-wrap {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th,
+.table td {
+    border-bottom: 1px solid var(--panel-border);
+    text-align: left;
+    padding: 8px 10px;
+}
+
+.table thead th {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* =========================
+   CARDS
+========================= */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+
+.card {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px;
+    min-height: 140px;
+    font-size: 15px;
+}
+
+html[data-theme="dark"] .card {
+    background: #121a2a;
+    border-color: #1f2a44;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, .12);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+/* =========================
+   SINGLE-CARD VIEWER
+========================= */
+.viewer-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.viewer-card {
+    padding: 24px;
+    border-radius: 14px;
+    min-height: 240px;
+    font-size: 17px;
+    max-width: 72ch;
+    /* readable line length on laptops */
+    margin: 0 auto;
+    /* center the card in the panel */
+}
+
+.viewer-card .q {
+    font-size: 19px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.viewer-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.viewer-count {
+    margin-left: auto;
+    color: var(--muted);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 900px) {
+    .header-left {
+        gap: 12px;
+    }
+
+    .nav {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .toolbar,
+    .app-actions {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .app-main,
+    .app-main.one-col {
+        padding: 12px;
+    }
+}

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CardCue</title>
+
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#8b93ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CardCue">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167x167.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="icon" href="icons/favicon.ico">
+
+    <!-- libs -->
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- core + shell -->
+    <script defer src="app.js"></script>
+    <script defer src="config.js"></script>
+    <script defer src="shell.js"></script>
+</head>
+
+<body>
+    <!-- Logo and brand offset are read by shell.js -->
+    <app-shell id="shell" data-logo="icons/favicon-32x32.png" data-brand-offset="12">
+        <main class="app-main">
+
+            <!-- Overview -->
+            <section class="panel">
+                <h2 class="panel-title">Overview</h2>
+                <div class="stats">
+                    <span>Total cards: <strong id="stat-cards">0</strong></span>
+                    <span>Accuracy: <strong id="stat-acc">0%</strong></span>
+                    <span>Wrong: <strong id="stat-wrong">0</strong></span>
+                </div>
+                <div class="meter">
+                    <div id="meter-acc" style="width:0%"></div>
+                </div>
+            </section>
+
+            <!-- Topics -->
+            <section class="panel">
+                <h2 class="panel-title">Topics</h2>
+                <ul id="topic-list" class="topic-list"></ul>
+            </section>
+
+            <!-- Learn (Browse & Peek) -->
+            <section class="panel">
+                <h2 class="panel-title">Learn (Browse &amp; Peek)</h2>
+
+                <div class="tabbar" style="margin-top:4px;">
+                    <button id="tab-single" class="tab active">Single</button>
+                    <button id="tab-grid" class="tab">Grid</button>
+                </div>
+
+                <div class="field">
+                    <input id="learn-search" class="input" type="search"
+                        placeholder="Search text / choices / topics..." />
+                </div>
+                <div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <label>Type
+                        <select id="learn-type" class="input" style="min-width:140px">
+                            <option value="">All</option>
+                            <option value="flashcard">Flashcards</option>
+                            <option value="mcq">MCQ</option>
+                        </select>
+                    </label>
+                    <label class="switch"><input type="checkbox" id="learn-wrong" /> Wrong-only</label>
+                    <label class="switch"><input type="checkbox" id="learn-due" /> Due now</label>
+                    <label class="switch"><input type="checkbox" id="learn-shuffle" /> Shuffle</label>
+                    <span id="learn-count" class="badge">0</span>
+                </div>
+
+                <!-- Single mode -->
+                <div id="learn-viewer">
+                    <div class="viewer-toolbar">
+                        <button id="v-prev" class="btn">◀ Previous (J)</button>
+                        <button id="v-next" class="btn">Next (K) ▶</button>
+                        <button id="v-peek" class="btn">Peek (Enter)</button>
+                        <span id="v-count" class="viewer-count">0 / 0</span>
+                    </div>
+                    <div class="field viewer-options"
+                        style="display:flex;gap:12px;align-items:center;margin:6px 0 8px;">
+                        <label class="switch"><input type="checkbox" id="opt-show-exp" /> Show explanation by
+                            default</label>
+                        <label class="switch"><input type="checkbox" id="opt-auto-adv" /> Auto-advance on
+                            correct</label>
+                    </div>
+                    <article id="v-card" class="card viewer-card reveal" tabindex="0"></article>
+                </div>
+
+                <!-- Grid mode -->
+                <div id="learn-grid" class="card-grid" hidden></div>
+            </section>
+
+            <!-- Test Yourself -->
+            <section class="panel">
+                <h2 class="panel-title">Test Yourself (Session Filters)</h2>
+                <div class="field"><label><input type="checkbox" id="chk-mcq" checked /> Include MCQ</label></div>
+                <div class="field"><label><input type="checkbox" id="chk-flash" checked /> Include Flashcards</label>
+                </div>
+                <div class="field"><label><input type="checkbox" id="chk-wrong" /> Wrong-only</label></div>
+                <div class="field"><label><input type="checkbox" id="chk-shuffle" /> Shuffle</label></div>
+                <div class="field"><label>Session size <input id="inp-size" type="number" value="20" min="1"
+                            class="input" /></label></div>
+                <div class="field"><button id="btn-start" class="btn primary">Start session</button></div>
+            </section>
+
+            <!-- Session -->
+            <section class="panel">
+                <h2 class="panel-title">Session</h2>
+                <div id="session-empty">
+                    <p class="placeholder">Start a session using the filters above.</p>
+                </div>
+                <div id="session-ui" hidden>
+                    <div class="stats">
+                        <span>Card <strong id="sess-idx">0</strong> / <strong id="sess-total">0</strong></span>
+                        <span>Correct: <strong id="sess-correct">0</strong></span>
+                    </div>
+                    <div class="meter">
+                        <div id="meter-progress" style="width:0%"></div>
+                    </div>
+                    <div id="card" class="card" style="margin-top:12px;min-height:160px;"></div>
+                    <div class="field" style="margin-top:8px;">
+                        <button id="btn-prev" class="btn">Previous</button>
+                        <button id="btn-next" class="btn">Next</button>
+                        <button id="btn-end" class="btn">End session</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Review -->
+            <section class="panel">
+                <h2 class="panel-title">Review</h2>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Prompt</th>
+                                <th>Topics</th>
+                                <th>Seen</th>
+                                <th>Correct</th>
+                                <th>Acc</th>
+                                <th>Streak</th>
+                            </tr>
+                        </thead>
+                        <tbody id="review-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </app-shell>
+
+    <script>
+        /**
+         * Initialises the study page after DOM readiness.
+         * Wires shell actions, viewer, filters, grid rendering, and tab switching.
+         * @returns {void}
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            App.initImportExportBindings();
+            App.initStudyPage();
+
+            /**
+             * Returns the currently active topic from the topic list, or an empty string.
+             * @returns {string} Active topic or ''.
+             */
+            const topicActive = () => {
+                const li = document.querySelector('#topic-list li.active');
+                const t = li ? li.getAttribute('data-topic') : '';
+                return (t && t !== '__ALL__') ? t : '';
+            };
+
+            const searchEl = document.getElementById('learn-search');
+            const typeEl = document.getElementById('learn-type');
+            const wrongEl = document.getElementById('learn-wrong');
+            const dueEl = document.getElementById('learn-due');
+            const shuffleEl = document.getElementById('learn-shuffle');
+            const countEl = document.getElementById('learn-count');
+
+            /**
+             * Single viewer initialisation using the shared helper.
+             * Applies current filters, updates the on-screen count, and renders.
+             */
+            const viewer = App.createSingleViewer({
+                getFilters() {
+                    const opts = {
+                        search: searchEl.value.trim(),
+                        type: typeEl.value,
+                        topic: topicActive(),
+                        wrongOnly: wrongEl.checked,
+                        dueOnly: dueEl.checked,
+                        shuffle: shuffleEl.checked
+                    };
+                    const list = App.filterDeck(opts);
+                    countEl.textContent = list.length;
+                    return opts;
+                },
+                elements: {
+                    host: document.getElementById('v-card'),
+                    count: document.getElementById('v-count'),
+                    btnPrev: document.getElementById('v-prev'),
+                    btnNext: document.getElementById('v-next'),
+                    btnPeek: document.getElementById('v-peek')
+                }
+            });
+
+            /**
+             * Renders the grid view with the current filters.
+             * @returns {void}
+             */
+            function renderGrid() {
+                const esc = s => s ? s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
+                const cards = App.filterDeck({
+                    search: searchEl.value.trim(),
+                    type: typeEl.value,
+                    topic: topicActive(),
+                    wrongOnly: wrongEl.checked,
+                    dueOnly: dueEl.checked,
+                    shuffle: shuffleEl.checked
+                });
+                countEl.textContent = cards.length;
+                const html = cards.map(c => {
+                    const topics = esc((c.topics || []).join(', '));
+                    if (c.type === 'mcq') {
+                        const letters = ['A', 'B', 'C', 'D'];
+                        const opts = (c.choices || []).map((t, i) => `<div><strong>${letters[i]}.</strong> ${esc(t || '')}</div>`).join('');
+                        return `<article class="card"><div class="meta"><span class="badge">${topics}</span><span class="badge">MCQ</span></div><div><strong>${esc(c.question || '')}</strong></div><div style="margin-top:6px">${opts}</div></article>`;
+                    }
+                    return `<article class="card"><div class="meta"><span class="badge">${topics}</span><span class="badge">Flashcard</span></div><div><strong>Front</strong><div>${esc(c.front || '')}</div></div></article>`;
+                }).join('');
+                document.getElementById('learn-grid').innerHTML = html || '<div class="placeholder">No cards match your filters.</div>';
+            }
+
+            /**
+             * Switches between Single and Grid learning modes, persists the choice, and re-renders.
+             * @param {'single'|'grid'} mode - Target mode.
+             * @returns {void}
+             */
+            function setMode(mode) {
+                const tabSingle = document.getElementById('tab-single');
+                const tabGrid = document.getElementById('tab-grid');
+                const wrapSingle = document.getElementById('learn-viewer');
+                const wrapGrid = document.getElementById('learn-grid');
+
+                const singleOn = (mode === 'single');
+                tabSingle.classList.toggle('active', singleOn);
+                tabGrid.classList.toggle('active', !singleOn);
+                wrapSingle.hidden = !singleOn;
+                wrapGrid.hidden = singleOn;
+                App.viewMode.set(mode);
+                if (singleOn) viewer.apply(); else renderGrid();
+            }
+
+            [searchEl, typeEl, wrongEl, dueEl, shuffleEl].forEach(el => {
+                el.addEventListener('input', () => { viewer.apply(); renderGrid(); });
+                el.addEventListener('change', () => { viewer.apply(); renderGrid(); });
+            });
+
+            document.getElementById('topic-list').addEventListener('click', (e) => {
+                if (e.target.tagName === 'LI') { setTimeout(() => { viewer.apply(); renderGrid(); }, 0); }
+            });
+
+            document.getElementById('tab-single').addEventListener('click', () => setMode('single'));
+            document.getElementById('tab-grid').addEventListener('click', () => setMode('grid'));
+
+            setMode(App.viewMode.get());
+            viewer.apply();
+        });
+    </script>
+</body>
+
+</html>

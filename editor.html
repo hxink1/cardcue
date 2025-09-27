@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CardCue Editor</title>
+
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#8b93ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CardCue">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167x167.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="icon" href="icons/favicon.ico">
+
+    <!-- libs -->
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- core + shell -->
+    <script defer src="app.js"></script>
+    <script defer src="config.js"></script>
+    <script defer src="shell.js"></script>
+</head>
+
+<body>
+    <app-shell id="shell" data-logo="icons/favicon-32x32.png" data-brand-offset="12">
+        <main class="app-main">
+
+            <section class="panel">
+                <h2 class="panel-title">Find a card</h2>
+                <div class="field">
+                    <input id="ed-search" class="input" type="search" placeholder="Search text / topics / ID" />
+                </div>
+                <div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <label>Type
+                        <select id="ed-type" class="input" style="min-width:140px">
+                            <option value="">All</option>
+                            <option value="flashcard">Flashcards</option>
+                            <option value="mcq">MCQ</option>
+                        </select>
+                    </label>
+                    <label>Topic
+                        <select id="ed-topic" class="input" style="min-width:160px">
+                            <option value="">All</option>
+                        </select>
+                    </label>
+                </div>
+                <div id="ed-list" class="card-grid"></div>
+            </section>
+
+            <section class="panel" id="ed-form-wrap" hidden>
+                <h2 class="panel-title">Edit card</h2>
+
+                <div class="viewer-actions" style="margin-top:0;">
+                    <button id="ed-prev" class="btn">◀ Previous (J)</button>
+                    <button id="ed-next" class="btn">Next (K) ▶</button>
+                    <span id="ed-count" class="viewer-count">0 / 0</span>
+                </div>
+
+                <form id="ed-form">
+                    <div class="field">ID <input class="input" id="f-id" disabled /></div>
+                    <div class="field">Type <input class="input" id="f-type" disabled /></div>
+
+                    <div id="f-flash" hidden>
+                        <div class="field">Front <textarea class="input" id="f-front" rows="3"></textarea></div>
+                        <div class="field">Back <textarea class="input" id="f-back" rows="3"></textarea></div>
+                    </div>
+
+                    <div id="f-mcq" hidden>
+                        <div class="field">Question <textarea class="input" id="f-q" rows="3"></textarea></div>
+                        <div class="field">Choice A <input class="input" id="f-a" /></div>
+                        <div class="field">Choice B <input class="input" id="f-b" /></div>
+                        <div class="field">Choice C <input class="input" id="f-c" /></div>
+                        <div class="field">Choice D <input class="input" id="f-d" /></div>
+                        <div class="field">Correct
+                            <select class="input" id="f-correct">
+                                <option>A</option>
+                                <option>B</option>
+                                <option>C</option>
+                                <option>D</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="field">Topics (comma-separated) <input class="input" id="f-topics" /></div>
+                    <div class="field">Explanation <textarea class="input" id="f-exp" rows="3"></textarea></div>
+
+                    <div class="field">
+                        <button type="submit" class="btn primary">Save</button>
+                        <button id="f-cancel" type="button" class="btn">Close</button>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </app-shell>
+
+    <script>
+        /**
+         * Initialises the editor page once the DOM is ready.
+         * Populates the topic filter, binds list rendering, opens the single-card editor,
+         * and persists edits back to CardCue's deck.
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            App.initImportExportBindings();
+
+            const search = document.getElementById('ed-search');
+            const typeSel = document.getElementById('ed-type');
+            const topicSel = document.getElementById('ed-topic');
+            const list = document.getElementById('ed-list');
+
+            App.topicsList().forEach(t => {
+                const o = document.createElement('option'); o.value = t; o.textContent = t; topicSel.appendChild(o);
+            });
+
+            const wrap = document.getElementById('ed-form-wrap');
+            const form = document.getElementById('ed-form');
+            const idEl = document.getElementById('f-id');
+            const typeEl = document.getElementById('f-type');
+
+            const fFlash = document.getElementById('f-flash');
+            const fFront = document.getElementById('f-front');
+            const fBack = document.getElementById('f-back');
+
+            const fMcq = document.getElementById('f-mcq');
+            const fQ = document.getElementById('f-q');
+            const fA = document.getElementById('f-a');
+            const fB = document.getElementById('f-b');
+            const fC = document.getElementById('f-c');
+            const fD = document.getElementById('f-d');
+            const fCorrect = document.getElementById('f-correct');
+
+            const fTopics = document.getElementById('f-topics');
+            const fExp = document.getElementById('f-exp');
+
+            const edPrev = document.getElementById('ed-prev');
+            const edNext = document.getElementById('ed-next');
+            const edCount = document.getElementById('ed-count');
+
+            let filtered = [];
+            let cursor = 0;
+
+            /**
+             * Escapes HTML special characters for safe insertion.
+             * @param {string} s - Raw text.
+             * @returns {string} Escaped text.
+             */
+            function esc(s) {
+                return s ? s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
+            }
+
+            /**
+             * Returns the HTML for a single card row in the list.
+             * @param {object} c - Card data.
+             * @returns {string} HTML string.
+             */
+            function rowHTML(c) {
+                const label = c.type === 'mcq' ? 'MCQ' : 'Flashcard';
+                const title = c.type === 'mcq' ? c.question : c.front;
+                return `<article class="card" tabindex="0" data-id="${c.id}">
+  <div class="meta"><span class="badge">${esc((c.topics || []).join(', '))}</span><span class="badge">${label}</span></div>
+  <div><strong>${esc(title || '')}</strong></div>
+  <div class="field"><button class="btn small ed-edit">Edit</button></div>
+</article>`;
+            }
+
+            /**
+             * Applies the current filter controls to produce the working list and updates the counter.
+             * @returns {void}
+             */
+            function applyFilters() {
+                filtered = App.filterDeck({
+                    search: search.value.trim(),
+                    type: typeSel.value,
+                    topic: topicSel.value
+                });
+                if (cursor >= filtered.length) cursor = Math.max(0, filtered.length - 1);
+                edCount.textContent = filtered.length ? `${cursor + 1} / ${filtered.length}` : '0 / 0';
+            }
+
+            /**
+             * Renders the filtered list of cards and wires Edit buttons.
+             * @returns {void}
+             */
+            function renderList() {
+                list.innerHTML = filtered.map(rowHTML).join('');
+                list.querySelectorAll('.ed-edit').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.closest('.card').dataset.id;
+                        const idx = filtered.findIndex(c => c.id === id);
+                        if (idx >= 0) { cursor = idx; openEditor(filtered[cursor].id); }
+                    });
+                });
+            }
+
+            /**
+             * Opens the editor panel for a specific card ID and populates form fields.
+             * @param {string} id - Card ID.
+             * @returns {void}
+             */
+            function openEditor(id) {
+                const currentDeck = App.getDeck();
+                const c = (currentDeck.cards || []).find(x => x.id === id); if (!c) return;
+                wrap.hidden = false; idEl.value = c.id; typeEl.value = c.type;
+                fTopics.value = (c.topics || []).join(', '); fExp.value = c.explanation || '';
+
+                if (c.type === 'flashcard') {
+                    fFlash.hidden = false; fMcq.hidden = true;
+                    fFront.value = c.front || ''; fBack.value = c.back || '';
+                    fFront.focus();
+                } else {
+                    fFlash.hidden = true; fMcq.hidden = false;
+                    fQ.value = c.question || '';
+                    fA.value = c.choices?.[0] || ''; fB.value = c.choices?.[1] || '';
+                    fC.value = c.choices?.[2] || ''; fD.value = c.choices?.[3] || '';
+                    fCorrect.value = typeof c.correct === 'number' ? ['A', 'B', 'C', 'D'][c.correct] : (c.answer || 'A');
+                    fQ.focus();
+                }
+                edCount.textContent = filtered.length ? `${cursor + 1} / ${filtered.length}` : '0 / 0';
+            }
+
+            edPrev.addEventListener('click', () => {
+                if (cursor > 0) { cursor--; openEditor(filtered[cursor].id); }
+            });
+            edNext.addEventListener('click', () => {
+                if (cursor < filtered.length - 1) { cursor++; openEditor(filtered[cursor].id); }
+            });
+            App.registerPreviewShortcuts({
+                prev() { if (!wrap.hidden) edPrev.click(); },
+                next() { if (!wrap.hidden) edNext.click(); }
+            });
+
+            /**
+             * Handles form submission, persists changes to the deck, and refreshes the list.
+             * @param {SubmitEvent} e - Submit event.
+             * @returns {void}
+             */
+            function onSubmit(e) {
+                e.preventDefault();
+                const currentDeck = App.getDeck();
+                const idx = currentDeck.cards.findIndex(x => x.id === idEl.value);
+                if (idx < 0) return;
+                const c = currentDeck.cards[idx];
+                c.topics = fTopics.value.split(',').map(s => s.trim()).filter(Boolean);
+                c.explanation = fExp.value || '';
+                if (c.type === 'flashcard') {
+                    c.front = fFront.value || '';
+                    c.back = fBack.value || '';
+                } else {
+                    c.question = fQ.value || '';
+                    c.choices = [fA.value || '', fB.value || '', fC.value || '', fD.value || ''];
+                    c.correct = { A: 0, B: 1, C: 2, D: 3 }[fCorrect.value] ?? 0;
+                    c.answer = ['A', 'B', 'C', 'D'][c.correct];
+                }
+                App.setDeck(currentDeck);
+                renderList();
+            }
+
+            form.addEventListener('submit', onSubmit);
+
+            document.getElementById('f-cancel').addEventListener('click', () => { wrap.hidden = true; });
+
+            [search, typeSel, topicSel].forEach(el => {
+                el.addEventListener('input', () => { applyFilters(); renderList(); });
+                el.addEventListener('change', () => { applyFilters(); renderList(); });
+            });
+
+            applyFilters();
+            renderList();
+        });
+    </script>
+</body>
+
+</html>
