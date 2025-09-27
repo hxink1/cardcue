@@ -157,16 +157,7 @@ class AppShell extends HTMLElement {
   }
 
   _attachManifest(obj) {
-    try {
-      const json = JSON.stringify(obj);
-      const blob = new Blob([json], { type: 'application/manifest+json' });
-      const href = URL.createObjectURL(blob);
-      let link = document.querySelector('link[rel="manifest"]');
-      if (!link) { link = document.createElement('link'); link.setAttribute('rel', 'manifest'); document.head.appendChild(link); }
-      link.setAttribute('href', href);
-    } catch (e) {
-      console.warn('Dynamic manifest failed; falling back to static file.', e);
-    }
+    // Dynamic manifest disabled — using static manifest.json from study.html
   }
 
   _inferPageSuffix() {
