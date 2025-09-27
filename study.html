@@ -39,38 +39,39 @@
         <main class="app-main">
 
             <!-- Overview -->
-            <section class="panel">
-                <h2 class="panel-title">Overview</h2>
-                <div class="stats">
+            <section class="panel" aria-labelledby="h-overview">
+                <h2 id="h-overview" class="panel-title">Overview</h2>
+                <div class="stats" style="display:flex; gap:12px; flex-wrap:wrap;">
                     <span>Total cards: <strong id="stat-cards">0</strong></span>
                     <span>Accuracy: <strong id="stat-acc">0%</strong></span>
                     <span>Wrong: <strong id="stat-wrong">0</strong></span>
                 </div>
-                <div class="meter">
-                    <div id="meter-acc" style="width:0%"></div>
+                <div class="progress" style="margin-top:8px;">
+                    <div id="meter-acc" class="progress-bar" style="width:0%"></div>
                 </div>
             </section>
 
             <!-- Topics -->
-            <section class="panel">
-                <h2 class="panel-title">Topics</h2>
+            <section class="panel" aria-labelledby="h-topics">
+                <h2 id="h-topics" class="panel-title">Topics</h2>
+                <!-- keeping UL for now; app.js reads the active <li> -->
                 <ul id="topic-list" class="topic-list"></ul>
             </section>
 
             <!-- Learn -->
-            <section class="panel">
-                <h2 class="panel-title">Learn</h2>
+            <section class="panel" aria-labelledby="h-learn">
+                <h2 id="h-learn" class="panel-title">Learn</h2>
 
-                <div class="tabbar" style="margin-top:4px;">
-                    <button id="tab-single" class="tab active">Single</button>
-                    <button id="tab-grid" class="tab">Grid</button>
+                <div class="tabbar" style="margin-top:4px; display:flex; gap:6px;">
+                    <button id="tab-single" class="tab btn small active" aria-pressed="true">Single</button>
+                    <button id="tab-grid" class="tab btn small" aria-pressed="false">Grid</button>
                 </div>
 
-                <div class="field">
-                    <input id="learn-search" class="input" type="search"
-                        placeholder="Search text / choices / topics..." />
+                <div class="field" style="margin-top:10px;">
+                    <input id="learn-search" class="input" type="search" placeholder="Search text / choices / topics..."
+                        aria-label="Search cards" />
                 </div>
-                <div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">
+                <div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                     <label>Type
                         <select id="learn-type" class="input" style="min-width:140px">
                             <option value="">All</option>
@@ -81,7 +82,7 @@
                     <label class="switch"><input type="checkbox" id="learn-wrong" /> Wrong-only</label>
                     <label class="switch"><input type="checkbox" id="learn-due" /> Due now</label>
                     <label class="switch"><input type="checkbox" id="learn-shuffle" /> Shuffle</label>
-                    <span id="learn-count" class="badge">0</span>
+                    <span id="learn-count" class="badge" aria-live="polite">0</span>
                 </div>
 
                 <!-- Single mode -->
@@ -99,7 +100,7 @@
                         <label class="switch"><input type="checkbox" id="opt-auto-adv" /> Auto-advance on
                             correct</label>
                     </div>
-                    <article id="v-card" class="card viewer-card reveal" tabindex="0"></article>
+                    <article id="v-card" class="card viewer-card reveal" tabindex="0" aria-live="polite"></article>
                 </div>
 
                 <!-- Grid mode -->
@@ -107,31 +108,35 @@
             </section>
 
             <!-- Test Yourself -->
-            <section class="panel">
-                <h2 class="panel-title">Test Yourself (Session Filters)</h2>
-                <div class="field"><label><input type="checkbox" id="chk-mcq" checked /> Include MCQ</label></div>
-                <div class="field"><label><input type="checkbox" id="chk-flash" checked /> Include Flashcards</label>
+            <section class="panel" aria-labelledby="h-test">
+                <h2 id="h-test" class="panel-title">Test Yourself (Session Filters)</h2>
+
+                <div class="field"><label><input type="checkbox" id="inc-mcq" checked /> Include MCQ</label></div>
+                <div class="field"><label><input type="checkbox" id="inc-flashcards" checked /> Include
+                        Flashcards</label></div>
+                <div class="field"><label><input type="checkbox" id="wrong-only" /> Wrong-only</label></div>
+                <div class="field"><label><input type="checkbox" id="shuffle" /> Shuffle</label></div>
+                <div class="field">
+                    <label>Session size
+                        <input id="session-size" type="number" value="20" min="1" class="input" />
+                    </label>
                 </div>
-                <div class="field"><label><input type="checkbox" id="chk-wrong" /> Wrong-only</label></div>
-                <div class="field"><label><input type="checkbox" id="chk-shuffle" /> Shuffle</label></div>
-                <div class="field"><label>Session size <input id="inp-size" type="number" value="20" min="1"
-                            class="input" /></label></div>
                 <div class="field"><button id="btn-start" class="btn primary">Start session</button></div>
             </section>
 
             <!-- Session -->
-            <section class="panel">
-                <h2 class="panel-title">Session</h2>
+            <section class="panel" aria-labelledby="h-session">
+                <h2 id="h-session" class="panel-title">Session</h2>
                 <div id="session-empty">
                     <p class="placeholder">Start a session using the filters above.</p>
                 </div>
                 <div id="session-ui" hidden>
-                    <div class="stats">
+                    <div class="stats" style="display:flex;gap:12px;flex-wrap:wrap;">
                         <span>Card <strong id="sess-idx">0</strong> / <strong id="sess-total">0</strong></span>
                         <span>Correct: <strong id="sess-correct">0</strong></span>
                     </div>
-                    <div class="meter">
-                        <div id="meter-progress" style="width:0%"></div>
+                    <div class="progress" style="margin-top:6px;">
+                        <div id="meter-progress" class="progress-bar" style="width:0%"></div>
                     </div>
                     <div id="card" class="card" style="margin-top:12px;min-height:160px;"></div>
                     <div class="field" style="margin-top:8px;">
@@ -142,28 +147,8 @@
                 </div>
             </section>
 
-            <!-- Review -->
-            <section class="panel">
-                <h2 class="panel-title">Review</h2>
-                <div class="table-wrap">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Type</th>
-                                <th>Prompt</th>
-                                <th>Topics</th>
-                                <th>Seen</th>
-                                <th>Correct</th>
-                                <th>Acc</th>
-                                <th>Streak</th>
-                            </tr>
-                        </thead>
-                        <tbody id="review-body"></tbody>
-                    </table>
-                </div>
-            </section>
         </main>
+
         <footer class="app-footer" style="padding:12px 16px; opacity:0.8; font-size:12px;">
             <span id="app-meta"></span>
             <script>
@@ -177,6 +162,7 @@
             </script>
         </footer>
     </app-shell>
+
     <script>
         /**
          * Initialises the study page after DOM readiness.
@@ -209,7 +195,7 @@
                 getFilters() {
                     const opts = {
                         search: searchEl.value.trim(),
-                        type: typeEl.value,           // '' | 'flashcard' | 'mcq'
+                        type: typeEl.value,                 // '' | 'flashcard' | 'mcq'
                         topic: topicActive(),
                         wrongOnly: wrongEl.checked,
                         dueOnly: dueEl.checked,
@@ -262,6 +248,8 @@
                 const singleOn = (mode === 'single');
                 tabSingle.classList.toggle('active', singleOn);
                 tabGrid.classList.toggle('active', !singleOn);
+                tabSingle.setAttribute('aria-pressed', String(singleOn));
+                tabGrid.setAttribute('aria-pressed', String(!singleOn));
                 wrapSingle.hidden = !singleOn;
                 wrapGrid.hidden = singleOn;
                 App.viewMode.set(mode);
