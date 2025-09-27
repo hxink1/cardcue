@@ -6,10 +6,14 @@
  * - HTML navigations: network-first to pick up fresh releases.
  * - Same-origin static assets: stale-while-revalidate for fast responses with background refresh.
  * Versioning:
- * - Update VERSION to invalidate old caches after a deployment.
+ * - The cache name is derived from APP_VERSION in version.js to keep SW + app in sync.
  */
 
-const VERSION = 'v8';
+// Pull the shared version constant into the SW scope.
+// Make sure version.js sits next to this file (or adjust the path).
+importScripts('version.js'); // defines self.APP_VERSION, e.g. '1.1.0-alpha'
+
+const VERSION = (self.APP_VERSION || 'v0');
 const CACHE = `cardcue-${VERSION}`;
 
 /**
@@ -20,7 +24,7 @@ const PAGES = [
   './', 'study.html', 'metrics.html', 'editor.html', 'manifest.json'
 ];
 const ASSETS = [
-  'styles.css', 'app.js', 'shell.js', 'config.js'
+  'styles.css', 'app.js', 'shell.js', 'config.js', 'version.js' // include version file too
 ];
 const ICONS = [
   'icons/icon-192x192.png', 'icons/icon-512x512.png',
