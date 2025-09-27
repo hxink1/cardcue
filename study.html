@@ -34,131 +34,118 @@
 </head>
 
 <body>
-    <!-- Logo and brand offset are read by shell.js -->
     <app-shell id="shell" data-logo="icons/favicon-32x32.png" data-brand-offset="12">
         <main class="app-main">
 
             <!-- Overview -->
             <section class="panel" aria-labelledby="h-overview">
                 <h2 id="h-overview" class="panel-title">Overview</h2>
-                <div class="stats row wrap">
+                <div class="stats" style="display:flex; gap:12px; flex-wrap:wrap;">
                     <span>Total cards: <strong id="stat-cards">0</strong></span>
                     <span>Accuracy: <strong id="stat-acc">0%</strong></span>
                     <span>Wrong: <strong id="stat-wrong">0</strong></span>
                 </div>
-                <div class="progress mt-2">
+                <div class="progress" style="margin-top:8px;">
                     <div id="meter-acc" class="progress-bar" style="width:0%"></div>
                 </div>
             </section>
 
-            <!-- Topics (shared for both modes) -->
-            <section class="panel" aria-labelledby="h-topics">
-                <h2 id="h-topics" class="panel-title">Topics</h2>
-                <ul id="topic-list" class="topic-list"></ul>
-            </section>
-
-            <!-- Unified Study Controls -->
+            <!-- Learn/Test unified -->
             <section class="panel" aria-labelledby="h-study">
-                <div class="row between center">
-                    <h2 id="h-study" class="panel-title">Study</h2>
+                <h2 id="h-study" class="panel-title">Study</h2>
 
-                    <!-- Mode toggle -->
-                    <div class="tabbar" role="tablist" aria-label="Study mode">
-                        <button id="mode-learn" class="tab btn small active" aria-selected="true"
-                            aria-controls="learn-controls">Learn</button>
-                        <button id="mode-test" class="tab btn small" aria-selected="false"
-                            aria-controls="test-controls">Test</button>
-                    </div>
+                <!-- Tabs -->
+                <div class="tabbar" style="margin-top:4px; display:flex; gap:6px;">
+                    <button id="tab-learn" class="tab btn small active" aria-pressed="true">Learn</button>
+                    <button id="tab-test" class="tab btn small" aria-pressed="false">Test</button>
                 </div>
 
-                <!-- Learn controls -->
-                <form id="learn-controls" class="stack-3" role="region" aria-labelledby="h-study">
-                    <div class="field">
-                        <input id="learn-search" class="input" type="search"
-                            placeholder="Search text / choices / topics..." aria-label="Search cards" />
+                <!-- Shared filters -->
+                <div class="field" style="margin-top:10px;">
+                    <input id="learn-search" class="input" type="search" placeholder="Search text / choices / topics..."
+                        aria-label="Search cards" />
+                </div>
+                <div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <label>Type
+                        <select id="learn-type" class="input" style="min-width:140px">
+                            <option value="">All</option>
+                            <option value="flashcard">Flashcards</option>
+                            <option value="mcq">MCQ</option>
+                        </select>
+                    </label>
+                    <!-- NEW: Topic dropdown -->
+                    <label>Topic
+                        <select id="topic-select" class="input" style="min-width:140px">
+                            <option value="__ALL__">All topics</option>
+                        </select>
+                    </label>
+                    <label class="switch"><input type="checkbox" id="learn-wrong" /> Wrong-only</label>
+                    <label class="switch"><input type="checkbox" id="learn-due" /> Due now</label>
+                    <label class="switch"><input type="checkbox" id="learn-shuffle" /> Shuffle</label>
+                    <span id="learn-count" class="badge" aria-live="polite">0</span>
+                </div>
+
+                <!-- Learn UI -->
+                <div id="learn-ui">
+                    <div class="tabbar" style="margin-top:4px; display:flex; gap:6px;">
+                        <button id="tab-single" class="tab btn small active" aria-pressed="true">Single</button>
+                        <button id="tab-grid" class="tab btn small" aria-pressed="false">Grid</button>
                     </div>
 
-                    <fieldset class="row wrap gap-2">
-                        <legend class="sr-only">Learn filters</legend>
-                        <label>Type
-                            <select id="learn-type" class="input min-140">
-                                <option value="">All</option>
-                                <option value="flashcard">Flashcards</option>
-                                <option value="mcq">MCQ</option>
-                            </select>
-                        </label>
-                        <label class="switch"><input type="checkbox" id="learn-wrong" /> Wrong-only</label>
-                        <label class="switch"><input type="checkbox" id="learn-due" /> Due now</label>
-                        <label class="switch"><input type="checkbox" id="learn-shuffle" /> Shuffle</label>
-                        <span id="learn-count" class="badge" aria-live="polite">0</span>
-                    </fieldset>
-
-                    <!-- Viewer options -->
-                    <fieldset class="row wrap gap-2" aria-label="Viewer options">
-                        <legend class="sr-only">Viewer options</legend>
-                        <label class="switch"><input type="checkbox" id="opt-show-exp" /> Show explanation by
-                            default</label>
-                        <label class="switch"><input type="checkbox" id="opt-auto-adv" /> Auto-advance on
-                            correct</label>
-
-                        <div class="tabbar ml-auto" role="tablist" aria-label="Learn view">
-                            <button id="tab-single" class="tab btn small active" aria-pressed="true">Single</button>
-                            <button id="tab-grid" class="tab btn small" aria-pressed="false">Grid</button>
+                    <!-- Single mode -->
+                    <div id="learn-viewer">
+                        <div class="viewer-toolbar">
+                            <button id="v-prev" class="btn">◀ Previous (J)</button>
+                            <button id="v-next" class="btn">Next (K) ▶</button>
+                            <button id="v-peek" class="btn">Show Answer (Enter)</button>
+                            <span id="v-count" class="viewer-count">0 / 0</span>
                         </div>
-                    </fieldset>
-                </form>
-
-                <!-- Test controls -->
-                <form id="test-controls" class="stack-3" role="region" aria-labelledby="h-study" hidden>
-                    <fieldset class="row wrap gap-2">
-                        <legend class="sr-only">Test filters</legend>
-                        <label><input type="checkbox" id="inc-mcq" checked /> Include MCQ</label>
-                        <label><input type="checkbox" id="inc-flashcards" checked /> Include Flashcards</label>
-                        <label><input type="checkbox" id="wrong-only" /> Wrong-only</label>
-                        <label><input type="checkbox" id="shuffle" /> Shuffle</label>
-                        <label>Session size
-                            <input id="session-size" type="number" value="20" min="1" class="input min-100" />
-                        </label>
-                    </fieldset>
-
-                    <div class="row">
-                        <button id="btn-start" class="btn primary">Start session</button>
+                        <div class="field viewer-options"
+                            style="display:flex;gap:12px;align-items:center;margin:6px 0 8px;">
+                            <label class="switch"><input type="checkbox" id="opt-show-exp" /> Show explanation by
+                                default</label>
+                            <label class="switch"><input type="checkbox" id="opt-auto-adv" /> Auto-advance on
+                                correct</label>
+                        </div>
+                        <article id="v-card" class="card viewer-card reveal" tabindex="0" aria-live="polite"></article>
                     </div>
-                </form>
+
+                    <!-- Grid mode -->
+                    <div id="learn-grid" class="card-grid" hidden></div>
+                </div>
+
+                <!-- Test UI -->
+                <div id="test-ui" hidden>
+                    <div class="field"><label><input type="checkbox" id="inc-mcq" checked /> Include MCQ</label></div>
+                    <div class="field"><label><input type="checkbox" id="inc-flashcards" checked /> Include
+                            Flashcards</label></div>
+                    <div class="field"><label><input type="checkbox" id="wrong-only" /> Wrong-only</label></div>
+                    <div class="field"><label><input type="checkbox" id="shuffle" /> Shuffle</label></div>
+                    <div class="field">
+                        <label>Session size
+                            <input id="session-size" type="number" value="20" min="1" class="input" />
+                        </label>
+                    </div>
+                    <div class="field"><button id="btn-start" class="btn primary">Start session</button></div>
+                </div>
             </section>
 
-            <!-- Session: single output surface for Learn (single/grid) OR Test session -->
+            <!-- Session -->
             <section class="panel" aria-labelledby="h-session">
                 <h2 id="h-session" class="panel-title">Session</h2>
-
-                <!-- Learn: Single viewer (shown when Learn + Single is active) -->
-                <div id="learn-viewer" hidden>
-                    <div class="viewer-toolbar row gap-2">
-                        <button id="v-prev" class="btn">◀ Previous (J)</button>
-                        <button id="v-next" class="btn">Next (K) ▶</button>
-                        <button id="v-peek" class="btn">Show Answer (Enter)</button>
-                        <span id="v-count" class="viewer-count ml-auto">0 / 0</span>
-                    </div>
-                    <article id="v-card" class="card viewer-card reveal" tabindex="0" aria-live="polite"></article>
-                </div>
-
-                <!-- Learn: Grid viewer (shown when Learn + Grid is active) -->
-                <div id="learn-grid" class="card-grid" hidden></div>
-
-                <!-- Test: Session engine UI -->
                 <div id="session-empty">
                     <p class="placeholder">Start a session using the filters above.</p>
                 </div>
                 <div id="session-ui" hidden>
-                    <div class="stats row wrap gap-2">
+                    <div class="stats" style="display:flex;gap:12px;flex-wrap:wrap;">
                         <span>Card <strong id="sess-idx">0</strong> / <strong id="sess-total">0</strong></span>
                         <span>Correct: <strong id="sess-correct">0</strong></span>
                     </div>
-                    <div class="progress mt-2">
+                    <div class="progress" style="margin-top:6px;">
                         <div id="meter-progress" class="progress-bar" style="width:0%"></div>
                     </div>
-                    <div id="card" class="card mt-3 min-160"></div>
-                    <div class="row gap-2 mt-2">
+                    <div id="card" class="card" style="margin-top:12px;min-height:160px;"></div>
+                    <div class="field" style="margin-top:8px;">
                         <button id="btn-prev" class="btn">Previous</button>
                         <button id="btn-next" class="btn">Next</button>
                         <button id="btn-end" class="btn">End session</button>
@@ -168,7 +155,7 @@
 
         </main>
 
-        <footer class="app-footer small soft">
+        <footer class="app-footer" style="padding:12px 16px; opacity:0.8; font-size:12px;">
             <span id="app-meta"></span>
             <script>
                 window.addEventListener('DOMContentLoaded', () => {
@@ -182,19 +169,17 @@
     </app-shell>
 
     <script>
-        // ---- Page wiring (uses your existing App.* helpers) ----
         document.addEventListener('DOMContentLoaded', () => {
             App.initImportExportBindings();
             App.initStudyPage();
 
-            // Utility: currently active topic from legacy UL
+            /** NEW: topicActive prefers dropdown */
             const topicActive = () => {
-                const li = document.querySelector('#topic-list li.active');
-                const t = li ? li.getAttribute('data-topic') : '';
-                return (t && t !== '__ALL__') ? t : '';
+                const sel = document.getElementById('topic-select');
+                if (sel && sel.value && sel.value !== '__ALL__') return sel.value;
+                return '';
             };
 
-            // Elements
             const searchEl = document.getElementById('learn-search');
             const typeEl = document.getElementById('learn-type');
             const wrongEl = document.getElementById('learn-wrong');
@@ -202,12 +187,12 @@
             const shuffleEl = document.getElementById('learn-shuffle');
             const countEl = document.getElementById('learn-count');
 
-            // Single viewer bound to the shared Session area
+            /** Viewer */
             const viewer = App.createSingleViewer({
                 getFilters() {
                     const opts = {
                         search: searchEl.value.trim(),
-                        type: typeEl.value,                 // '' | 'flashcard' | 'mcq'
+                        type: typeEl.value,
                         topic: topicActive(),
                         wrongOnly: wrongEl.checked,
                         dueOnly: dueEl.checked,
@@ -226,7 +211,17 @@
                 }
             });
 
-            // Grid render
+            /** Populate Topic dropdown */
+            const topicSelect = document.getElementById('topic-select');
+            if (topicSelect) {
+                const topics = App.topicsList();
+                topicSelect.innerHTML = ['<option value="__ALL__">All topics</option>']
+                    .concat(topics.map(t => `<option value="${t}">${t}</option>`))
+                    .join('');
+                topicSelect.addEventListener('change', () => { viewer.apply(); renderGrid(); });
+            }
+
+            /** Grid rendering */
             function renderGrid() {
                 const esc = s => s ? s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
                 const cards = App.filterDeck({
@@ -243,20 +238,19 @@
                     if (c.type === 'mcq') {
                         const letters = ['A', 'B', 'C', 'D'];
                         const opts = (c.choices || []).map((t, i) => `<div><strong>${letters[i] || ''}.</strong> ${esc(t || '')}</div>`).join('');
-                        return `<article class="card"><div class="meta"><span class="badge">${topics}</span><span class="badge">MCQ</span></div><div><strong>${esc(c.question || '')}</strong></div><div class="mt-1">${opts}</div></article>`;
+                        return `<article class="card"><div class="meta"><span class="badge">${topics}</span><span class="badge">MCQ</span></div><div><strong>${esc(c.question || '')}</strong></div><div style="margin-top:6px">${opts}</div></article>`;
                     }
                     return `<article class="card"><div class="meta"><span class="badge">${topics}</span><span class="badge">Flashcard</span></div><div><strong>Front</strong><div>${esc(c.front || '')}</div></div></article>`;
                 }).join('');
                 document.getElementById('learn-grid').innerHTML = html || '<div class="placeholder">No cards match your filters.</div>';
             }
 
-            // Mode + view switching (controls what appears inside Session)
-            function setViewMode(mode) {
+            /** Single/Grid switch */
+            function setMode(mode) {
                 const tabSingle = document.getElementById('tab-single');
                 const tabGrid = document.getElementById('tab-grid');
                 const wrapSingle = document.getElementById('learn-viewer');
                 const wrapGrid = document.getElementById('learn-grid');
-
                 const singleOn = (mode === 'single');
                 tabSingle.classList.toggle('active', singleOn);
                 tabGrid.classList.toggle('active', !singleOn);
@@ -268,68 +262,34 @@
                 if (singleOn) viewer.apply(); else renderGrid();
             }
 
-            function setStudyMode(which) {
-                const learnForm = document.getElementById('learn-controls');
-                const testForm = document.getElementById('test-controls');
-                const btnLearn = document.getElementById('mode-learn');
-                const btnTest = document.getElementById('mode-test');
-
-                const isLearn = (which === 'learn');
-                btnLearn.classList.toggle('active', isLearn);
-                btnTest.classList.toggle('active', !isLearn);
-                btnLearn.setAttribute('aria-selected', String(isLearn));
-                btnTest.setAttribute('aria-selected', String(!isLearn));
-
-                learnForm.hidden = !isLearn;
-                testForm.hidden = isLearn;
-
-                // Session area visibility:
-                // - Learn mode shows learn-viewer or learn-grid, hides test session UI
-                // - Test mode hides learn viewers and shows the session placeholders
-                document.getElementById('learn-viewer').hidden = !isLearn || (App.viewMode.get() !== 'single');
-                document.getElementById('learn-grid').hidden = !isLearn || (App.viewMode.get() === 'single');
-
-                const sessEmpty = document.getElementById('session-empty');
-                const sessUI = document.getElementById('session-ui');
-                if (isLearn) {
-                    // Hide test session widgets until a test actually starts
-                    sessUI.hidden = true;
-                    // In learn mode, if no learn content yet, keep empty placeholder hidden
-                    sessEmpty.hidden = true;
-                    // Render current learn view
-                    if (App.viewMode.get() === 'single') viewer.apply(); else renderGrid();
-                } else {
-                    // Test mode: show the empty-state until Start
-                    sessEmpty.hidden = false;
-                    // Hide learn viewers
-                    document.getElementById('learn-viewer').hidden = true;
-                    document.getElementById('learn-grid').hidden = true;
-                }
-            }
-
-            // Inputs that affect learn rendering
             [searchEl, typeEl, wrongEl, dueEl, shuffleEl].forEach(el => {
                 el.addEventListener('input', () => { viewer.apply(); renderGrid(); });
                 el.addEventListener('change', () => { viewer.apply(); renderGrid(); });
             });
 
-            // Topic clicks refresh both learn views
-            document.getElementById('topic-list').addEventListener('click', (e) => {
-                if (e.target.tagName === 'LI') { setTimeout(() => { viewer.apply(); renderGrid(); }, 0); }
-            });
+            document.getElementById('tab-single').addEventListener('click', () => setMode('single'));
+            document.getElementById('tab-grid').addEventListener('click', () => setMode('grid'));
 
-            // Learn view toggles
-            document.getElementById('tab-single').addEventListener('click', () => setViewMode('single'));
-            document.getElementById('tab-grid').addEventListener('click', () => setViewMode('grid'));
-
-            // Mode toggles
-            document.getElementById('mode-learn').addEventListener('click', () => setStudyMode('learn'));
-            document.getElementById('mode-test').addEventListener('click', () => setStudyMode('test'));
-
-            // Initial state
-            setViewMode(App.viewMode.get());   // 'single' | 'grid'
-            setStudyMode('learn');             // default landing
+            setMode(App.viewMode.get());
             viewer.apply();
+
+            /** Tab switch Learn/Test */
+            const tabLearn = document.getElementById('tab-learn');
+            const tabTest = document.getElementById('tab-test');
+            const learnUI = document.getElementById('learn-ui');
+            const testUI = document.getElementById('test-ui');
+            tabLearn.addEventListener('click', () => {
+                tabLearn.classList.add('active');
+                tabTest.classList.remove('active');
+                learnUI.hidden = false;
+                testUI.hidden = true;
+            });
+            tabTest.addEventListener('click', () => {
+                tabTest.classList.add('active');
+                tabLearn.classList.remove('active');
+                learnUI.hidden = true;
+                testUI.hidden = false;
+            });
         });
     </script>
 </body>
