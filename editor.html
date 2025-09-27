@@ -27,6 +27,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <!-- core + shell -->
+    <script defer src="version.js"></script>
     <script defer src="app.js"></script>
     <script defer src="config.js"></script>
     <script defer src="shell.js"></script>
@@ -102,6 +103,18 @@
                 </form>
             </section>
         </main>
+        <footer class="app-footer" style="padding:12px 16px; opacity:0.8; font-size:12px;">
+            <span id="app-meta"></span>
+            <script>
+                // Run after all deferred scripts (version.js + config.js) have executed
+                window.addEventListener('DOMContentLoaded', () => {
+                    const metaEl = document.getElementById('app-meta');
+                    const ver = (window.APP && window.APP.version) || '—';
+                    const date = (window.APP && window.APP.lastUpdated) || '—';
+                    metaEl.textContent = `Made by Cedric · Version ${ver} · Last updated ${date}`;
+                });
+            </script>
+        </footer>
     </app-shell>
 
     <script>
@@ -279,13 +292,5 @@
         });
     </script>
 </body>
-<footer>
-    <span id="app-meta"></span>
-    <script>
-        const { version, lastUpdated } = window.APP;
-        document.getElementById('app-meta').textContent =
-            `Made by Cedric · Version ${version} · Last updated ${lastUpdated}`;
-    </script>
-</footer>
 
 </html>

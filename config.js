@@ -20,4 +20,3 @@ window.APP = {
   version: self.APP_VERSION,
   lastUpdated: self.APP_LAST_UPDATED
 };
-
