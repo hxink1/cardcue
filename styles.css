@@ -366,6 +366,7 @@ input[type="number"] {
 }
 
 /* Search input inside topics */
+/* Search input inside topics */
 .filters .srch input[type="search"] {
     border-radius: 8px;
     padding: 8px 10px;
@@ -378,7 +379,6 @@ input[type="number"] {
     box-shadow: var(--ring);
     outline: none;
 }
-
 
 /* Topic chips */
 .chips {
