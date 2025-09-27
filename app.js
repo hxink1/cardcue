@@ -115,7 +115,7 @@
 
   // ---------- Settings (persisted) ----------
 
-  // ===== Namespace localStorage by path so dev/prod don't collide
+  // Namespace localStorage by path so dev/prod don't collide
   var APP_NS = (function () {
     try {
       // e.g. /cardcue/ or /cardcue-dev/ -> "cardcue" or "cardcue-dev"
@@ -124,39 +124,35 @@
     } catch (_) { return 'cardcue:default'; }
   })();
 
-  // Replace your old keys:
-  // var KEY = 'study_deck_v1';
-  // var KEY_SESSIONS = 'study_deck_sessions';
-  var KEY = APP_NS + ':deck:v1';
+  // Primary storage keys
+  var KEY          = APP_NS + ':deck:v1';
   var KEY_SESSIONS = APP_NS + ':sessions';
 
+  // Keys
+  var SETTINGS_KEY = APP_NS + ':settings';
+  var VIEWMODE_KEY = APP_NS + ':viewmode';  // 'single' | 'grid' | etc.
+  var THEME_KEY    = APP_NS + ':theme';     // 'light' | 'dark' (optional, for consistency)
 
-  /**
-   * Default settings object.
-   * @returns {{showExplanationByDefault:boolean,autoAdvanceOnCorrect:boolean}} Defaults.
-   */
+  // Defaults for persisted settings
   var defaultSettings = {
     showExplanationByDefault: false,
-    autoAdvanceOnCorrect: false
+    autoAdvanceOnCorrect:     false
   };
 
-  /**
-   * Loads settings from localStorage, applying defaults.
-   * @returns {object} Settings object.
-   */
+  // Load/save helpers for settings
   function loadSettings() {
-    try { return Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); }
-    catch (_e) { return Object.assign({}, defaultSettings); }
+    try {
+      return Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'));
+    } catch (_e) {
+      return Object.assign({}, defaultSettings);
+    }
   }
 
-  /** @type {object} In-memory settings cache. */
   var __settings = loadSettings();
 
-  /**
-   * Persists the in-memory settings to localStorage.
-   * @returns {void}
-   */
-  function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(__settings)); }
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(__settings)); } catch (_e) {}
+  }
 
   // ---------- Storage + model ----------
   var SR_STEPS = [1, 3, 7, 14]; // days
