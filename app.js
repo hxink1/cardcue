@@ -203,6 +203,8 @@
       var d = JSON.parse(raw);
       (d.cards || []).forEach(hydrateCard);
       buildTopicIndex(d);
+      // expose for devtools/other scripts
+      window.cards = d.cards;
       return d;
     } catch (e) { console.error(e); return newDeck(); }
   }
@@ -226,6 +228,7 @@
   function setDeck(newDeckObj) {
     deck = newDeckObj;
     buildTopicIndex(deck);
+    window.cards = deck.cards;
     persist();
   }
 
@@ -236,6 +239,7 @@
   function persist() {
     deck.updatedAt = nowISO();
     localStorage.setItem(KEY, JSON.stringify(deck));
+    window.cards = deck.cards;
     safe(updateOverview); safe(renderTopics); safe(renderReview);
   }
 
@@ -848,25 +852,49 @@
   var session = { pool: [], idx: 0, correct: 0, wrongs: [] };
 
   /**
+   * Reads selected topics from the UI (chips or legacy list).
+   * @returns {string[]|null} Array of topics, or null for "all".
+   */
+  function readSelectedTopics() {
+    var host = $('#topic-list'); if (!host) return null;
+    if (host.tagName === 'UL') {
+      var active = host.querySelector('li.active');
+      var val = active ? active.getAttribute('data-topic') : '__ALL__';
+      return (val && val !== '__ALL__') ? [val] : null;
+    }
+    var boxes = host.querySelectorAll('input[name="topics"]:checked');
+    var arr = Array.prototype.map.call(boxes, function (n) { return n.value; });
+    return arr.length ? arr : null;
+  }
+
+  /**
    * Builds the working set of cards for a session based on UI controls.
    * @returns {object[]} The session pool.
    */
   function buildWorkingSet() {
-    var allowMCQ = $('#chk-mcq')?.checked ?? true;
-    var allowFlash = $('#chk-flash')?.checked ?? true;
-    var wrongOnly = $('#chk-wrong')?.checked ?? false;
-    var shuffle = $('#chk-shuffle')?.checked ?? false;
-    var size = Math.max(1, parseInt($('#inp-size')?.value || '20', 10));
+    // new ids (fall back to legacy ones if absent)
+    var allowMCQ   = ($('#inc-mcq')?.checked ?? $('#chk-mcq')?.checked) ?? true;
+    var allowFlash = ($('#inc-flashcards')?.checked ?? $('#chk-flash')?.checked) ?? true;
+    var wrongOnly  = ($('#wrong-only')?.checked ?? $('#chk-wrong')?.checked) ?? false;
+    var shuffle    = ($('#shuffle')?.checked ?? $('#chk-shuffle')?.checked) ?? false;
+    var sizeVal    = $('#session-size')?.value || $('#inp-size')?.value || '20';
+    var size       = Math.max(1, parseInt(sizeVal, 10) || 20);
 
-    var activeTopicEl = $('#topic-list li.active');
-    var activeTopic = activeTopicEl ? activeTopicEl.getAttribute('data-topic') : '__ALL__';
+    var selectedTopics = readSelectedTopics(); // null => all
 
     var base = deck.cards.filter(function (c) {
       return (c.type === 'mcq' && allowMCQ) || (c.type === 'flashcard' && allowFlash);
     });
-    if (activeTopic && activeTopic !== '__ALL__') {
-      base = base.filter(function (c) { return (c.topics || []).indexOf(activeTopic) >= 0; });
+
+    if (selectedTopics) {
+      var set = new Set(selectedTopics);
+      base = base.filter(function (c) {
+        var topics = c.topics || [];
+        for (var i = 0; i < topics.length; i++) if (set.has(topics[i])) return true;
+        return false;
+      });
     }
+
     var pool = wrongOnly ? base.filter(function (c) { return c.stats.correct < c.stats.seen; }) : base;
     if (shuffle) pool = fisherYates(pool);
     if (pool.length > size) pool = pool.slice(0, size);
@@ -1041,12 +1069,21 @@
   };
 
   /**
-   * Starts a new study session with the current filters.
+   * Starts a new study session with the current UI filters (legacy/start button flow).
    * @returns {void}
    */
   function startSession() {
     var pool = buildWorkingSet();
     if (!pool.length) { alert('No cards match your filters.'); return; }
+    startSessionFromPool(pool);
+  }
+
+  /**
+   * Starts a session from a provided pool (used by the new form flow).
+   * @param {object[]} pool - Prefiltered cards.
+   * @returns {void}
+   */
+  function startSessionFromPool(pool) {
     session = { pool: pool, idx: 0, correct: 0, wrongs: [] };
     App.incrementSessionCount();
     $('#session-empty')?.setAttribute('hidden', 'hidden');
@@ -1055,22 +1092,44 @@
     renderCard();
   }
 
-  // ---------- Study page: overview/topic/review helpers ----------
-
   /**
-   * Renders the topic list with counts and active selection behaviour.
+   * Renders the topic UI. Supports legacy <ul> list and new “chips” container.
    * @returns {void}
    */
   function renderTopics() {
-    var list = $('#topic-list'); if (!list) return; list.innerHTML = '';
-    var counts = {}; deck.cards.forEach(function (c) { (c.topics || []).forEach(function (t) { counts[t] = (counts[t] || 0) + 1; }); });
-    var liAll = document.createElement('li'); liAll.textContent = 'All topics (' + deck.cards.length + ')'; liAll.setAttribute('data-topic', '__ALL__'); liAll.className = 'active';
-    liAll.addEventListener('click', function () { $$('#topic-list li').forEach(function (n) { n.className = ''; }); liAll.className = 'active'; });
-    list.appendChild(liAll);
-    Object.keys(counts).sort().forEach(function (t) {
-      var li = document.createElement('li'); li.setAttribute('data-topic', t); li.textContent = t + ' (' + counts[t] + ')';
-      li.addEventListener('click', function () { $$('#topic-list li').forEach(function (n) { n.className = ''; }); li.className = 'active'; });
-      list.appendChild(li);
+    var host = $('#topic-list'); if (!host) return;
+
+    var topics = App.topicsList();
+    // Legacy UL mode
+    if (host.tagName === 'UL') {
+      host.innerHTML = '';
+      var liAll = document.createElement('li');
+      liAll.textContent = 'All topics (' + deck.cards.length + ')';
+      liAll.setAttribute('data-topic', '__ALL__'); liAll.className = 'active';
+      liAll.addEventListener('click', function () { $$('#topic-list li').forEach(function (n) { n.className = ''; }); liAll.className = 'active'; });
+      host.appendChild(liAll);
+      topics.forEach(function (t) {
+        var count = (deck.topicIndex[t] || []).length;
+        var li = document.createElement('li'); li.setAttribute('data-topic', t); li.textContent = t + ' (' + count + ')';
+        li.addEventListener('click', function () { $$('#topic-list li').forEach(function (n) { n.className = ''; }); li.className = 'active'; });
+        host.appendChild(li);
+      });
+      return;
+    }
+
+    // New chips mode (div/container)
+    host.innerHTML = '';
+    topics.forEach(function (t, i) {
+      var id = 'topic-' + i;
+      var input = document.createElement('input');
+      input.type = 'checkbox'; input.className = 'chip';
+      input.id = id; input.name = 'topics'; input.value = t; input.checked = true;
+
+      var label = document.createElement('label');
+      label.htmlFor = id; label.textContent = t;
+
+      host.appendChild(input);
+      host.appendChild(label);
     });
   }
 
@@ -1113,6 +1172,19 @@
     });
     typesetMath(tbody);
   }
+
+  // ---------- Public bridge for new form flow ----------
+
+  /**
+   * Starts a session when called externally with a preselected set.
+   * Exposed for the new study form (topic chips).
+   * @param {object[]} selected - Cards selected by the UI.
+   * @returns {void}
+   */
+  window.startSession = function (selected) {
+    if (!selected || !selected.length) { alert('No cards match your filters.'); return; }
+    startSessionFromPool(selected);
+  };
 
   // ---------- Initial: pages call init functions ----------
 })();

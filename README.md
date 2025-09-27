@@ -1,4 +1,4 @@
-# CardCue — Alpha 1.0
+# CardCue — 1.1.2 Alpha 
 CardCue is a zero-build flashcards + MCQ micro-app.  
 It runs entirely in the browser, installs as a Progressive Web App (PWA), and works offline.
 
