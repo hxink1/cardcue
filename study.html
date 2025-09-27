@@ -60,61 +60,95 @@
                     <button id="tab-test" class="tab btn small" aria-pressed="false">Test</button>
                 </div>
 
-                <!-- Shared filters -->
-                <div class="field" style="margin-top:10px;">
-                    <input id="learn-search" class="input" type="search" placeholder="Search text / choices / topics..."
-                        aria-label="Search cards" />
-                </div>
-                <div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                    <label>Type
-                        <select id="learn-type" class="input" style="min-width:140px">
-                            <option value="">All</option>
-                            <option value="flashcard">Flashcards</option>
-                            <option value="mcq">MCQ</option>
-                        </select>
-                    </label>
-                    <!-- NEW: Topic dropdown -->
-                    <label>Topic
-                        <select id="topic-select" class="input" style="min-width:140px">
-                            <option value="__ALL__">All topics</option>
-                        </select>
-                    </label>
-                    <label class="switch"><input type="checkbox" id="learn-wrong" /> Wrong-only</label>
-                    <label class="switch"><input type="checkbox" id="learn-due" /> Due now</label>
-                    <label class="switch"><input type="checkbox" id="learn-shuffle" /> Shuffle</label>
-                    <span id="learn-count" class="badge" aria-live="polite">0</span>
-                </div>
+                <!-- TEST BAR (hidden by default) -->
+                <div id="test-bar" class="panel" hidden>
+                    <div class="chips" style="margin-bottom:8px">
+                        <input class="chip" type="radio" name="test-plan" id="plan-cram" value="cram" checked>
+                        <label for="plan-cram">Cram</label>
 
-                <!-- Learn UI -->
-                <div id="learn-ui">
-                    <div class="tabbar" style="margin-top:4px; display:flex; gap:6px;">
-                        <button id="tab-single" class="tab btn small active" aria-pressed="true">Single</button>
-                        <button id="tab-grid" class="tab btn small" aria-pressed="false">Grid</button>
+                        <input class="chip" type="radio" name="test-plan" id="plan-daily" value="daily">
+                        <label for="plan-daily">Daily</label>
                     </div>
 
-                    <!-- Single mode -->
-                    <div id="learn-viewer">
-                        <div class="viewer-toolbar">
-                            <button id="v-prev" class="btn">◀ Previous (J)</button>
-                            <button id="v-next" class="btn">Next (K) ▶</button>
-                            <button id="v-peek" class="btn">Show Answer (Enter)</button>
-                            <span id="v-count" class="viewer-count">0 / 0</span>
+                    <div class="filters" style="grid-template-columns: repeat(auto-fit,minmax(220px,1fr));">
+                        <div>
+                            <label class="sr-only" for="test-type">Question type</label>
+                            <select id="test-type" class="input">
+                                <option value="">All</option>
+                                <option value="flashcard">Flashcards</option>
+                                <option value="mcq">MCQ</option>
+                            </select>
                         </div>
-                        <div class="field viewer-options"
-                            style="display:flex;gap:12px;align-items:center;margin:6px 0 8px;">
-                            <label class="switch"><input type="checkbox" id="opt-show-exp" /> Show explanation by
-                                default</label>
-                            <label class="switch"><input type="checkbox" id="opt-auto-adv" /> Auto-advance on
-                                correct</label>
-                        </div>
-                        <article id="v-card" class="card viewer-card reveal" tabindex="0" aria-live="polite"></article>
-                    </div>
 
-                    <!-- Grid mode -->
-                    <div id="learn-grid" class="card-grid" hidden></div>
+                        <div class="switch"><input id="test-wrong" type="checkbox"><span>Wrong-only</span></div>
+                        <div class="switch"><input id="test-due" type="checkbox"><span>Due now</span></div>
+                        <div class="switch"><input id="test-shuffle" type="checkbox" checked><span>Shuffle</span></div>
+                        <div>
+                            <label class="sr-only" for="test-count">Question count</label>
+                            <input id="test-count" type="number" class="input" min="1" value="20" placeholder="Count">
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Test UI -->
+                <!-- LEARN BAR (visible in Learn mode) -->
+                <div id="learn-bar">
+                    <!-- Shared filters -->
+                    <div class="field" style="margin-top:10px;">
+                        <input id="learn-search" class="input" type="search"
+                            placeholder="Search text / choices / topics..." aria-label="Search cards" />
+                    </div>
+                    <div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        <label>Type
+                            <select id="learn-type" class="input" style="min-width:140px">
+                                <option value="">All</option>
+                                <option value="flashcard">Flashcards</option>
+                                <option value="mcq">MCQ</option>
+                            </select>
+                        </label>
+                        <!-- NEW: Topic dropdown -->
+                        <label>Topic
+                            <select id="topic-select" class="input" style="min-width:140px">
+                                <option value="__ALL__">All topics</option>
+                            </select>
+                        </label>
+                        <label class="switch"><input type="checkbox" id="learn-wrong" /> Wrong-only</label>
+                        <label class="switch"><input type="checkbox" id="learn-due" /> Due now</label>
+                        <label class="switch"><input type="checkbox" id="learn-shuffle" /> Shuffle</label>
+                        <span id="learn-count" class="badge" aria-live="polite">0</span>
+                    </div>
+
+                    <!-- Learn UI -->
+                    <div id="learn-ui">
+                        <div class="tabbar" style="margin-top:4px; display:flex; gap:6px;">
+                            <button id="tab-single" class="tab btn small active" aria-pressed="true">Single</button>
+                            <button id="tab-grid" class="tab btn small" aria-pressed="false">Grid</button>
+                        </div>
+
+                        <!-- Single mode -->
+                        <div id="learn-viewer">
+                            <div class="viewer-toolbar">
+                                <button id="v-prev" class="btn">◀ Previous (J)</button>
+                                <button id="v-next" class="btn">Next (K) ▶</button>
+                                <button id="v-peek" class="btn">Show Answer (Enter)</button>
+                                <span id="v-count" class="viewer-count">0 / 0</span>
+                            </div>
+                            <div class="field viewer-options"
+                                style="display:flex;gap:12px;align-items:center;margin:6px 0 8px;">
+                                <label class="switch"><input type="checkbox" id="opt-show-exp" /> Show explanation by
+                                    default</label>
+                                <label class="switch"><input type="checkbox" id="opt-auto-adv" /> Auto-advance on
+                                    correct</label>
+                            </div>
+                            <article id="v-card" class="card viewer-card reveal" tabindex="0" aria-live="polite">
+                            </article>
+                        </div>
+
+                        <!-- Grid mode -->
+                        <div id="learn-grid" class="card-grid" hidden></div>
+                    </div>
+                </div> <!-- /#learn-bar -->
+
+                <!-- Test UI (legacy session builder; still used when Test tab is on) -->
                 <div id="test-ui" hidden>
                     <div class="field"><label><input type="checkbox" id="inc-mcq" checked /> Include MCQ</label></div>
                     <div class="field"><label><input type="checkbox" id="inc-flashcards" checked /> Include
@@ -221,7 +255,7 @@
                 topicSelect.addEventListener('change', () => { viewer.apply(); renderGrid(); });
             }
 
-            /** Grid rendering */
+            /** Grid rendering (capped at 9 cards) */
             function renderGrid() {
                 const esc = s => s ? s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
                 const cards = App.filterDeck({
@@ -230,7 +264,8 @@
                     topic: topicActive(),
                     wrongOnly: wrongEl.checked,
                     dueOnly: dueEl.checked,
-                    shuffle: shuffleEl.checked
+                    shuffle: shuffleEl.checked,
+                    limit: 9
                 });
                 countEl.textContent = cards.length;
                 const html = cards.map(c => {
@@ -272,24 +307,6 @@
 
             setMode(App.viewMode.get());
             viewer.apply();
-
-            /** Tab switch Learn/Test */
-            const tabLearn = document.getElementById('tab-learn');
-            const tabTest = document.getElementById('tab-test');
-            const learnUI = document.getElementById('learn-ui');
-            const testUI = document.getElementById('test-ui');
-            tabLearn.addEventListener('click', () => {
-                tabLearn.classList.add('active');
-                tabTest.classList.remove('active');
-                learnUI.hidden = false;
-                testUI.hidden = true;
-            });
-            tabTest.addEventListener('click', () => {
-                tabTest.classList.add('active');
-                tabLearn.classList.remove('active');
-                learnUI.hidden = true;
-                testUI.hidden = false;
-            });
         });
     </script>
 </body>
