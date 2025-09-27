@@ -111,18 +111,28 @@ async function staleWhileRevalidate(req) {
  * @param {FetchEvent} e - Service worker fetch event.
  * @returns {void}
  */
+
 function handleFetch(e) {
   const { request } = e;
   const url = new URL(request.url);
 
+  // 1) Navigations: network-first
   if (request.mode === 'navigate') {
     e.respondWith(networkFirst(request));
     return;
   }
 
+  // 2) Same-origin static: SWR
   if (url.origin === location.origin &&
       /\.(?:css|js|png|ico|svg|json)$/.test(url.pathname)) {
     e.respondWith(staleWhileRevalidate(request));
+    return;
+  }
+
+  // 3) CDN libs (MathJax + SheetJS) — SWR runtime cache
+  if (/^https:\/\/cdn\.jsdelivr\.net\/npm\/(mathjax@3|xlsx@0\.18\.5)\//.test(url.href)) {
+    e.respondWith(staleWhileRevalidate(request));
+    return;
   }
 }
 
