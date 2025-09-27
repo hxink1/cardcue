@@ -9,7 +9,7 @@
  * - Update VERSION to invalidate old caches after a deployment.
  */
 
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = `cardcue-${VERSION}`;
 
 /**
