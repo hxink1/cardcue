@@ -68,6 +68,9 @@
 
                         <input class="chip" type="radio" name="test-plan" id="plan-daily" value="daily">
                         <label for="plan-daily">Daily</label>
+                        <div class="field" style="margin-top:8px;display:flex;justify-content:flex-end">
+                            <button id="test-start" class="btn primary">Start test</button>
+                        </div>
                     </div>
 
                     <div class="filters" style="grid-template-columns: repeat(auto-fit,minmax(220px,1fr));">
@@ -307,6 +310,33 @@
 
             setMode(App.viewMode.get());
             viewer.apply();
+
+            // Start Test (from Test bar filters)
+            const startBtn = document.getElementById('test-start');
+            if (startBtn) {
+                startBtn.addEventListener('click', () => {
+                    const plan = document.querySelector('input[name="test-plan"]:checked')?.value || 'cram';
+                    const opts = {
+                        plan, // "cram" | "daily"
+                        type: document.getElementById('test-type').value,          // "" | "flashcard" | "mcq"
+                        wrongOnly: document.getElementById('test-wrong').checked,
+                        dueOnly: document.getElementById('test-due').checked,
+                        shuffle: document.getElementById('test-shuffle').checked,
+                        count: parseInt(document.getElementById('test-count').value, 10) || 20
+                    };
+
+                    // Prefer the new API if you exposed one; otherwise fall back to legacy starter
+                    if (typeof App.startSessionFromFilters === 'function') {
+                        App.startSessionFromFilters(opts);
+                    } else if (typeof App.startSession === 'function') {
+                        App.startSession(opts);
+                    } else {
+                        // Last-resort: click the legacy button so existing handlers run unchanged
+                        const legacy = document.getElementById('btn-start');
+                        if (legacy) legacy.click();
+                    }
+                });
+            }
         });
     </script>
 </body>
