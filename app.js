@@ -132,6 +132,7 @@
   var SETTINGS_KEY = APP_NS + ':settings';
   var VIEWMODE_KEY = APP_NS + ':viewmode';  // 'single' | 'grid' | etc.
   var THEME_KEY    = APP_NS + ':theme';     // 'light' | 'dark' (optional, for consistency)
+  var META_KEY     = APP_NS + ':deckMeta';  // stores { name, importedAt }
 
   // Defaults for persisted settings
   var defaultSettings = {
@@ -435,6 +436,22 @@
 
   /** @type {any} */
   window.App = window.App || {};
+
+  // Deck meta bootstrap and setter
+  try { App.deckMeta = JSON.parse(localStorage.getItem(META_KEY) || 'null'); } catch (_) { App.deckMeta = null; }
+
+  /**
+   * Persist deck meta (file name + imported timestamp) and notify listeners.
+   * @param {{name:string, importedAt:number}|null} meta
+   */
+  App.setDeckMeta = function (meta) {
+    try {
+      App.deckMeta = meta || null;
+      if (meta) localStorage.setItem(META_KEY, JSON.stringify(meta));
+      else localStorage.removeItem(META_KEY);
+      window.dispatchEvent(new CustomEvent('app:deckLoaded', { detail: meta }));
+    } catch (_) {}
+  };
 
   /**
    * Retrieves the deck from storage without mutating in-memory state.
@@ -799,6 +816,14 @@
             setDeck(fresh);
           }
           upsertCards(collected);
+
+          // --- NEW: record file name + timestamp for the Overview header ---
+          var friendly = (files && files.length)
+            ? (files.length === 1 ? files[0].name : (files[0].name + ' +' + (files.length - 1) + ' more'))
+            : 'Imported deck';
+          App.setDeckMeta({ name: friendly, importedAt: Date.now() });
+          // ----------------------------------------------------------------
+
           fileInput.value = '';
         }
       }
@@ -856,6 +881,7 @@
       if (!confirm('Delete ALL cards and progress? This cannot be undone.')) return;
       deck = newDeck();
       localStorage.setItem(KEY, JSON.stringify(deck));
+      App.setDeckMeta(null); // NEW: clear filename/date meta
       safe(updateOverview); safe(renderTopics); safe(renderReview);
       alert('Deck cleared. Add cards via Import (Excel/JSON).');
     });
@@ -1034,7 +1060,7 @@
     if (isCorrect) { c.stats.correct += 1; c.stats.streak += 1; } else { c.stats.streak = 0; }
     c.stats.lastSeen = nowISO();
     var stepIdx = Math.min(c.stats.streak, SR_STEPS.length - 1);
-    var days = SR_STEPS[stepIdx];
+       var days = SR_STEPS[stepIdx];
     c.sr.intervalDays = days;
     c.sr.lastReviewed = nowMs();
     c.sr.nextDue = c.sr.lastReviewed + days * 24 * 3600 * 1000;
@@ -1060,13 +1086,6 @@
     else { session.idx = session.pool.length; renderCard(); }
   }
 
-/**
- * Initialiser for the study page. Wires buttons, loads stats and applies options.
- * @returns {void}
- *
- * PATCH: adds a true "Test" mode with its own option bar & presets (cram/daily),
- * and routes the Start button to build a pool from either Learn or Test controls.
- */
   /**
    * Initialiser for the study page. Wires buttons, loads stats and applies options.
    * Supports Learn/Test mode toggling with different UI panels.
@@ -1099,57 +1118,25 @@
     const learnBar = $('#learn-bar') || $('#session-ui');
     const testBar  = $('#test-bar');
 
-    // Hide both initially
-    if (learnBar) learnBar.hidden = true;
-    if (testBar)  testBar.hidden  = true;
-
-    // ---------- Test mode controls & presets ----------
-    const planRadios = testBar ? testBar.querySelectorAll('input[name="test-plan"]') : null;
-    const testType    = $('#test-type');
-    const testWrong   = $('#test-wrong');
-    const testDue     = $('#test-due');
-    const testShuffle = $('#test-shuffle');
-    const testCount   = $('#test-count');
-
-    function currentPlan() {
-      if (!planRadios) return 'cram';
-      const r = Array.prototype.find.call(planRadios, x => x.checked);
-      return r ? r.value : 'cram';
-    }
-    function presetFromPlan() {
-      if (!testWrong || !testDue || !testShuffle) return;
-      const p = currentPlan();
-      if (p === 'cram') {
-        testWrong.checked = true;
-        testDue.checked = false;
-        testShuffle.checked = true;
-        if (testCount && !testCount.value) testCount.value = 20;
-      } else { // daily
-        testWrong.checked = false;
-        testDue.checked = true;
-        testShuffle.checked = false;
-        if (testCount && !testCount.value) testCount.value = 20;
-      }
-    }
-    planRadios && planRadios.forEach(r => r.addEventListener('change', presetFromPlan));
-
     // ---------- Mode toggle ----------
     function setMode(m) {
       document.body.dataset.mode = m; // "learn" | "test"
       tabLearn?.classList.toggle('active', m === 'learn');
-      tabTest ?.classList.toggle('active', m === 'test');
+      tabTest?.classList.toggle('active', m === 'test');
       if (learnBar) learnBar.hidden = (m !== 'learn');
       if (testBar)  testBar.hidden  = (m !== 'test');
 
-      if (m === 'test') presetFromPlan();
+      if (m === 'test') {
+        // ensure any test presets are reflected in UI redraws that depend on mode
+      }
       safe(renderCard);
     }
 
-    tabLearn?.addEventListener('click', () => setMode('learn'));
-    tabTest ?.addEventListener('click', () => setMode('test'));
-
-    // Default mode
+    // Default mode early to ensure one bar is visible even if later code hiccups
     if (!document.body.dataset.mode) setMode('learn');
+
+    tabLearn?.addEventListener('click', () => setMode('learn'));
+    tabTest?.addEventListener('click', () => setMode('test'));
   };
 
   /**
@@ -1175,6 +1162,34 @@
     $('#sess-total') && ($('#sess-total').textContent = pool.length);
     renderCard();
   }
+
+  // ---------- Public bridge for new Test-bar form flow ----------
+
+  /**
+   * Builds a pool from test filters and starts a session.
+   * @param {{plan?:'cram'|'daily', type?:''|'flashcard'|'mcq', wrongOnly?:boolean, dueOnly?:boolean, shuffle?:boolean, count?:number}} opts
+   * @returns {void}
+   */
+  App.startSessionFromFilters = function (opts) {
+    opts = opts || {};
+    var type = opts.type || '';
+    var wrongOnly = !!opts.wrongOnly;
+    var dueOnly = !!opts.dueOnly;
+    var shuffle = !!opts.shuffle;
+    var count = Math.max(1, parseInt(opts.count, 10) || 20);
+
+    // Plan presets (in case caller didn't apply them in the UI)
+    if (opts.plan === 'cram') {
+      wrongOnly = true; dueOnly = false; shuffle = true;
+    } else if (opts.plan === 'daily') {
+      wrongOnly = false; dueOnly = true; shuffle = false;
+    }
+
+    var filtered = App.filterDeck({ type: type, wrongOnly: wrongOnly, dueOnly: dueOnly, shuffle: shuffle });
+    if (filtered.length > count) filtered = filtered.slice(0, count);
+    if (!filtered.length) { alert('No cards match your test filters.'); return; }
+    startSessionFromPool(filtered);
+  };
 
   /**
    * Renders the topic UI. Supports legacy <ul> list and new “chips” container.
@@ -1257,7 +1272,7 @@
     typesetMath(tbody);
   }
 
-  // ---------- Public bridge for new form flow ----------
+  // ---------- Public bridge for new form flow (legacy compatibility) ----------
 
   /**
    * Starts a session when called externally with a preselected set.

@@ -40,6 +40,7 @@
             <!-- Overview -->
             <section class="panel" aria-labelledby="h-overview">
                 <h2 id="h-overview" class="panel-title">Overview</h2>
+                <span id="deck-meta" class="muted" style="margin-left:8px;font-size:.9em;font-weight:400;"></span>
                 <div class="stats" style="display:flex; gap:12px; flex-wrap:wrap;">
                     <span>Total cards: <strong id="stat-cards">0</strong></span>
                     <span>Accuracy: <strong id="stat-acc">0%</strong></span>
@@ -56,8 +57,8 @@
 
                 <!-- Tabs -->
                 <div class="tabbar" style="margin-top:4px; display:flex; gap:6px;">
-                    <button id="tab-learn" class="tab btn small active" aria-pressed="true">Learn</button>
-                    <button id="tab-test" class="tab btn small" aria-pressed="false">Test</button>
+                    <button id="tab-learn" type="button" class="tab btn small active" aria-pressed="true">Learn</button>
+                    <button id="tab-test" type="button" class="tab btn small" aria-pressed="false">Test</button>
                 </div>
 
                 <!-- TEST BAR (hidden by default) -->
@@ -69,7 +70,7 @@
                         <input class="chip" type="radio" name="test-plan" id="plan-daily" value="daily">
                         <label for="plan-daily">Daily</label>
                         <div class="field" style="margin-top:8px;display:flex;justify-content:flex-end">
-                            <button id="test-start" class="btn primary">Start test</button>
+                            <button id="test-start" class="btn primary" type="button">Start test</button>
                         </div>
                     </div>
 
@@ -123,16 +124,17 @@
                     <!-- Learn UI -->
                     <div id="learn-ui">
                         <div class="tabbar" style="margin-top:4px; display:flex; gap:6px;">
-                            <button id="tab-single" class="tab btn small active" aria-pressed="true">Single</button>
-                            <button id="tab-grid" class="tab btn small" aria-pressed="false">Grid</button>
+                            <button id="tab-single" type="button" class="tab btn small active"
+                                aria-pressed="true">Single</button>
+                            <button id="tab-grid" type="button" class="tab btn small" aria-pressed="false">Grid</button>
                         </div>
 
                         <!-- Single mode -->
                         <div id="learn-viewer">
                             <div class="viewer-toolbar">
-                                <button id="v-prev" class="btn">◀ Previous (J)</button>
-                                <button id="v-next" class="btn">Next (K) ▶</button>
-                                <button id="v-peek" class="btn">Show Answer (Enter)</button>
+                                <button id="v-prev" class="btn" type="button">◀ Previous (J)</button>
+                                <button id="v-next" class="btn" type="button">Next (K) ▶</button>
+                                <button id="v-peek" class="btn" type="button">Show Answer (Enter)</button>
                                 <span id="v-count" class="viewer-count">0 / 0</span>
                             </div>
                             <div class="field viewer-options"
@@ -163,7 +165,8 @@
                             <input id="session-size" type="number" value="20" min="1" class="input" />
                         </label>
                     </div>
-                    <div class="field"><button id="btn-start" class="btn primary">Start session</button></div>
+                    <div class="field"><button id="btn-start" class="btn primary" type="button">Start session</button>
+                    </div>
                 </div>
             </section>
 
@@ -183,9 +186,9 @@
                     </div>
                     <div id="card" class="card" style="margin-top:12px;min-height:160px;"></div>
                     <div class="field" style="margin-top:8px;">
-                        <button id="btn-prev" class="btn">Previous</button>
-                        <button id="btn-next" class="btn">Next</button>
-                        <button id="btn-end" class="btn">End session</button>
+                        <button id="btn-prev" class="btn" type="button">Previous</button>
+                        <button id="btn-next" class="btn" type="button">Next</button>
+                        <button id="btn-end" class="btn" type="button">End session</button>
                     </div>
                 </div>
             </section>
@@ -206,11 +209,40 @@
     </app-shell>
 
     <script>
+        // ---- Deck meta in Overview header ----
+        function setDeckMeta(meta) {
+            const el = document.getElementById('deck-meta');
+            if (!el) return;
+            if (!meta || !meta.name) { el.textContent = ''; return; }
+
+            const when = meta.importedAt ? new Date(meta.importedAt) : null;
+            const whenTxt = when ? when.toLocaleString() : '';
+            el.textContent = `· ${meta.name}${whenTxt ? ` — imported ${whenTxt}` : ''}`;
+            if (when) el.title = `Imported ${when.toISOString()}`;
+        }
+
+        // Listen for future imports immediately (does not require App)
+        window.addEventListener('app:deckLoaded', (e) => setDeckMeta(e.detail));
+
+        // Defer ALL App usage until app.js has executed (after DOM parsed)
         document.addEventListener('DOMContentLoaded', () => {
+            // Initial load: from App or localStorage fallback
+            try {
+                const meta = (window.App && window.App.deckMeta) ||
+                    JSON.parse(localStorage.getItem('cardcue:deckMeta') || 'null');
+                if (meta) setDeckMeta(meta);
+            } catch (_) { }
+
+            // If your App exposes an event bus, hook it now (App exists for sure here)
+            if (window.App && typeof window.App.on === 'function') {
+                window.App.on('deck:loaded', setDeckMeta);
+            }
+
+            // Initialise UI pieces
             App.initImportExportBindings();
             App.initStudyPage();
 
-            /** NEW: topicActive prefers dropdown */
+            // --- Filters + viewer wiring ---
             const topicActive = () => {
                 const sel = document.getElementById('topic-select');
                 if (sel && sel.value && sel.value !== '__ALL__') return sel.value;
@@ -224,7 +256,6 @@
             const shuffleEl = document.getElementById('learn-shuffle');
             const countEl = document.getElementById('learn-count');
 
-            /** Viewer */
             const viewer = App.createSingleViewer({
                 getFilters() {
                     const opts = {
@@ -248,7 +279,7 @@
                 }
             });
 
-            /** Populate Topic dropdown */
+            // Populate Topic dropdown
             const topicSelect = document.getElementById('topic-select');
             if (topicSelect) {
                 const topics = App.topicsList();
@@ -258,7 +289,7 @@
                 topicSelect.addEventListener('change', () => { viewer.apply(); renderGrid(); });
             }
 
-            /** Grid rendering (capped at 9 cards) */
+            // Grid rendering (capped at 9 cards)
             function renderGrid() {
                 const esc = s => s ? s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
                 const cards = App.filterDeck({
@@ -283,8 +314,8 @@
                 document.getElementById('learn-grid').innerHTML = html || '<div class="placeholder">No cards match your filters.</div>';
             }
 
-            /** Single/Grid switch */
-            function setMode(mode) {
+            // Single/Grid switch (rename avoids any collision with app.js)
+            function setViewMode(mode) {
                 const tabSingle = document.getElementById('tab-single');
                 const tabGrid = document.getElementById('tab-grid');
                 const wrapSingle = document.getElementById('learn-viewer');
@@ -305,35 +336,30 @@
                 el.addEventListener('change', () => { viewer.apply(); renderGrid(); });
             });
 
-            document.getElementById('tab-single').addEventListener('click', () => setMode('single'));
-            document.getElementById('tab-grid').addEventListener('click', () => setMode('grid'));
+            document.getElementById('tab-single').addEventListener('click', () => setViewMode('single'));
+            document.getElementById('tab-grid').addEventListener('click', () => setViewMode('grid'));
 
-            setMode(App.viewMode.get());
+            setViewMode(App.viewMode.get());
             viewer.apply();
 
-            // Start Test (from Test bar filters)
+            // Start Test (from Test bar filters) — hardened fallback
             const startBtn = document.getElementById('test-start');
             if (startBtn) {
                 startBtn.addEventListener('click', () => {
                     const plan = document.querySelector('input[name="test-plan"]:checked')?.value || 'cram';
                     const opts = {
-                        plan, // "cram" | "daily"
-                        type: document.getElementById('test-type').value,          // "" | "flashcard" | "mcq"
+                        plan,
+                        type: document.getElementById('test-type').value,
                         wrongOnly: document.getElementById('test-wrong').checked,
                         dueOnly: document.getElementById('test-due').checked,
                         shuffle: document.getElementById('test-shuffle').checked,
                         count: parseInt(document.getElementById('test-count').value, 10) || 20
                     };
-
-                    // Prefer the new API if you exposed one; otherwise fall back to legacy starter
+                    const legacy = document.getElementById('btn-start');
                     if (typeof App.startSessionFromFilters === 'function') {
                         App.startSessionFromFilters(opts);
-                    } else if (typeof App.startSession === 'function') {
-                        App.startSession(opts);
-                    } else {
-                        // Last-resort: click the legacy button so existing handlers run unchanged
-                        const legacy = document.getElementById('btn-start');
-                        if (legacy) legacy.click();
+                    } else if (legacy) {
+                        legacy.click(); // falls back to app.js’ wired startSession()
                     }
                 });
             }
